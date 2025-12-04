@@ -1,0 +1,5644 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Smart Duty Attendance with TA &amp; Night Form</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&amp;display=swap" rel="stylesheet"/>
+<style>
+:root {
+--bg: #f0f4ff; --card: #ffffff; --muted: #6b7280; --accent: #4f46e5; --success: #10b981; --danger: #ef4444; --yellow: #f59e0b; --ta: #0ea5e9; --rest: #3b82f6; --night: #8b5cf6; --holiday: #8b5cf6;
+--border-radius: 16px; --shadow: 0 10px 30px rgba(27, 61, 122, 0.08);
+--card-gradient: linear-gradient(145deg, #ffffff, #f8faff);
+--accent-gradient: linear-gradient(135deg, #4f46e5, #7c3aed);
+--success-gradient: linear-gradient(135deg, #10b981, #34d399);
+--danger-gradient: linear-gradient(135deg, #ef4444, #f87171);
+--yellow-gradient: linear-gradient(135deg, #f59e0b, #fbbf24);
+--rest-gradient: linear-gradient(135deg, #3b82f6, #60a5fa);
+--night-gradient: linear-gradient(135deg, #8b5cf6, #a78bfa);
+--holiday-gradient: linear-gradient(135deg, #8b5cf6, #a78bfa);
+--glass-bg: rgba(255, 255, 255, 0.7);
+--glass-border: rgba(255, 255, 255, 0.2);
+}
+* {
+box-sizing: border-box;
+font-family: 'Inter', system-ui, sans-serif;
+margin: 0;
+padding: 0;
+}
+body {
+background: var(--bg);
+color: var(--text-color, #0f172a);
+transition: background 0.3s, color 0.3s;
+min-height: 100vh;
+overflow-x: hidden;
+line-height: 1.5;
+}
+header {
+background: var(--glass-bg);
+padding: 12px 16px;
+display: flex;
+align-items: center;
+justify-content: space-between;
+border-bottom: 1px solid var(--glass-border);
+box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+position: sticky;
+top: 0;
+z-index: 100;
+backdrop-filter: blur(10px);
+flex-wrap: wrap;
+gap: 8px;
+}
+header h1 {
+margin: 0;
+font-size: 16px;
+font-weight: 600;
+display: flex;
+align-items: center;
+gap: 8px;
+flex-direction: column;
+align-items: flex-start;
+}
+.header-pay-rate {
+font-size: 12px;
+font-weight: 600;
+color: var(--success);
+padding: 3px 8px;
+background: rgba(16, 185, 129, 0.1);
+border-radius: 6px;
+border: 1px solid rgba(16, 185, 129, 0.2);
+}
+.header-controls {
+display: flex;
+gap: 6px;
+align-items: center;
+}
+.main-container {
+display: flex;
+flex-direction: column;
+min-height: calc(100vh - 60px);
+position: relative;
+}
+.calendar-view {
+width: 100%;
+height: 100%;
+padding: 12px;
+transition: transform 0.3s ease;
+}
+.calendar-view.active {
+transform: translateX(0);
+}
+.calendar-view.hidden {
+display: none;
+}
+.sidebar-menu {
+width: 100%;
+height: 100%;
+padding: 12px;
+background: var(--bg);
+position: absolute;
+top: 0;
+left: 0;
+transform: translateX(-100%);
+transition: transform 0.3s ease;
+overflow-y: auto;
+z-index: 50;
+}
+.sidebar-menu.active {
+transform: translateX(0);
+}
+.sidebar-menu.hidden {
+display: none;
+}
+.container {
+max-width: 100%;
+margin: 0 auto;
+padding: 0;
+}
+.controls {
+display: flex;
+gap: 8px;
+align-items: center;
+margin-bottom: 10px;
+flex-wrap: wrap;
+}
+select, input[type="month"] {
+padding: 10px;
+border-radius: 10px;
+border: 1px solid var(--border-color, #dbe7ff);
+background: var(--card);
+color: inherit;
+min-width: 120px;
+box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+transition: all 0.3s;
+font-size: 14px;
+}
+select:focus, input[type="month"]:focus {
+outline: none;
+box-shadow: 0 0 0 2px var(--accent);
+}
+button {
+padding: 10px 14px;
+border-radius: 10px;
+border: 0;
+background: var(--accent-gradient);
+color: #fff;
+cursor: pointer;
+font-weight: 500;
+transition: all 0.3s;
+box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+position: relative;
+overflow: hidden;
+font-size: 14px;
+}
+button:hover {
+transform: translateY(-2px);
+box-shadow: 0 6px 16px rgba(79, 70, 229, 0.4);
+}
+button:active {
+transform: translateY(0);
+}
+.card {
+background: var(--card-gradient);
+padding: 16px;
+border-radius: var(--border-radius);
+box-shadow: var(--shadow);
+transition: background 0.3s, box-shadow 0.3s;
+border: 1px solid var(--glass-border);
+position: relative;
+overflow: hidden;
+margin-bottom: 14px;
+}
+.card::before {
+content: '';
+position: absolute;
+top: 0;
+left: 0;
+width: 100%;
+height: 4px;
+background: var(--accent-gradient);
+}
+.calendar {
+display: grid;
+grid-template-columns: repeat(7, 1fr);
+gap: 6px;
+}
+.day-header {
+text-align: center;
+padding: 8px 4px;
+color: var(--muted);
+font-weight: 700;
+font-size: 12px;
+background: var(--glass-bg);
+border-radius: 6px;
+backdrop-filter: blur(5px);
+}
+.cell {
+min-height: 65px;
+padding: 6px;
+border-radius: 10px;
+border: 1px solid transparent;
+position: relative;
+background: var(--card);
+cursor: pointer;
+transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+overflow: hidden;
+box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+display: flex;
+flex-direction: column;
+align-items: center;
+justify-content: center;
+perspective: 1000px;
+transform-style: preserve-3d;
+}
+.cell:hover {
+transform: translateY(-3px) rotateX(3deg);
+box-shadow: 0 6px 15px rgba(0, 0, 0, 0.15);
+}
+.cell:active {
+transform: translateY(-1px) scale(0.98);
+}
+.cell.inactive {
+opacity: 0.35;
+pointer-events: none;
+}
+.cell.today {
+border: 2px solid var(--accent);
+box-shadow: 0 0 15px var(--accent);
+animation: pulseToday 2s infinite;
+}
+@keyframes pulseToday {
+0% { box-shadow: 0 0 5px var(--accent); }
+50% { box-shadow: 0 0 15px var(--accent); }
+100% { box-shadow: 0 0 5px var(--accent); }
+}
+.cell.status-present {
+background: linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(16, 185, 129, 0.05));
+border-left: 4px solid var(--success);
+}
+.cell.status-absent {
+background: linear-gradient(135deg, rgba(239, 68, 68, 0.15), rgba(239, 68, 68, 0.05));
+border-left: 4px solid var(--danger);
+}
+.cell.status-leave {
+background: linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(245, 158, 11, 0.05));
+border-left: 4px solid var(--yellow);
+}
+.cell.status-rest {
+background: linear-gradient(135deg, rgba(59, 130, 246, 0.15), rgba(59, 130, 246, 0.05));
+border-left: 4px solid var(--rest);
+}
+.cell.status-holiday {
+background: linear-gradient(135deg, rgba(139, 92, 246, 0.15), rgba(139, 92, 246, 0.05));
+border-left: 4px solid var(--holiday);
+}
+.date-num {
+font-weight: 700;
+font-size: 16px;
+margin-bottom: 3px;
+position: relative;
+z-index: 2;
+}
+.status {
+position: absolute;
+right: 6px;
+top: 6px;
+padding: 3px 8px;
+border-radius: 10px;
+font-size: 10px;
+font-weight: 600;
+box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+opacity: 0;
+transform: translateY(-5px);
+transition: all 0.3s ease;
+}
+.cell:hover .status {
+opacity: 1;
+transform: translateY(0);
+}
+.s-present {
+background: var(--success-gradient);
+color: white;
+}
+.s-absent {
+background: var(--danger-gradient);
+color: white;
+}
+.s-leave {
+background: var(--yellow-gradient);
+color: white;
+}
+.s-rest {
+background: var(--rest-gradient);
+color: white;
+}
+.s-holiday {
+background: var(--holiday-gradient);
+color: white;
+}
+.ta-indicator {
+position: absolute;
+left: 6px;
+top: 6px;
+background: var(--yellow);
+color: white;
+font-size: 9px;
+font-weight: bold;
+padding: 2px 5px;
+border-radius: 5px;
+box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+animation: pulse 2s infinite;
+}
+.night-indicator {
+position: absolute;
+left: 6px;
+bottom: 6px;
+background: var(--night);
+color: white;
+font-size: 9px;
+font-weight: bold;
+padding: 2px 5px;
+border-radius: 5px;
+box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+animation: pulse 2s infinite;
+}
+.leave-type-indicator {
+position: absolute;
+left: 6px;
+bottom: 6px;
+background: var(--yellow);
+color: white;
+font-size: 9px;
+font-weight: bold;
+padding: 2px 5px;
+border-radius: 5px;
+}
+@keyframes pulse {
+0% { transform: scale(1); }
+50% { transform: scale(1.05); }
+100% { transform: scale(1); }
+}
+.small {
+font-size: 12px;
+color: var(--muted);
+}
+.actions {
+display: flex;
+gap: 6px;
+flex-wrap: wrap;
+}
+.top-stats {
+display: flex;
+gap: 8px;
+flex-wrap: wrap;
+margin-bottom: 6px;
+}
+.stat {
+background: var(--card-gradient);
+padding: 10px 12px;
+border-radius: 10px;
+min-width: 100px;
+text-align: center;
+box-shadow: var(--shadow);
+border: 1px solid var(--glass-border);
+transition: transform 0.3s;
+flex: 1;
+}
+.stat:hover {
+transform: translateY(-2px);
+}
+.right {
+margin-left: auto;
+}
+.chip {
+padding: 8px 12px;
+border-radius: 999px;
+border: 1px solid var(--border-color, rgba(0, 0, 0, 0.06));
+background: transparent;
+color: inherit;
+cursor: pointer;
+transition: all 0.3s;
+font-size: 13px;
+}
+.chip.active {
+background: var(--accent-gradient);
+color: white;
+border-color: var(--accent);
+box-shadow: 0 4px 10px rgba(79, 70, 229, 0.3);
+}
+.modal-backdrop {
+position: fixed;
+inset: 0;
+background: rgba(11, 20, 50, 0.65);
+display: none;
+align-items: center;
+justify-content: center;
+padding: 15px;
+z-index: 200;
+backdrop-filter: blur(5px);
+}
+.modal {
+background: var(--card-gradient);
+width: 100%;
+max-width: 95%;
+border-radius: var(--border-radius);
+padding: 18px;
+max-height: 90vh;
+overflow-y: auto;
+box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25);
+border: 1px solid var(--glass-border);
+}
+.form-row {
+display: flex;
+gap: 8px;
+margin-bottom: 10px;
+flex-wrap: wrap;
+}
+label {
+font-size: 13px;
+color: var(--muted);
+display: block;
+margin-bottom: 5px;
+font-weight: 500;
+}
+input[type="time"], select, input[type="text"], input[type="file"], input[type="password"], input[type="date"], input[type="email"] {
+padding: 10px;
+border-radius: 10px;
+border: 1px solid var(--border-color, #e6eefc);
+background: var(--card);
+color: inherit;
+flex: 1;
+box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+transition: all 0.3s;
+font-size: 14px;
+}
+input[type="time"]:focus, select:focus, input[type="text"]:focus, input[type="password"]:focus, input[type="date"]:focus, input[type="email"]:focus {
+outline: none;
+box-shadow: 0 0 0 2px var(--accent);
+}
+textarea {
+width: 100%;
+padding: 10px;
+border-radius: 10px;
+border: 1px solid var(--border-color, #e6eefc);
+background: var(--card);
+color: inherit;
+resize: vertical;
+box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+transition: all 0.3s;
+font-size: 14px;
+}
+textarea:focus {
+outline: none;
+box-shadow: 0 0 0 2px var(--accent);
+}
+footer.note {
+font-size: 11px;
+color: var(--muted);
+margin-top: 6px;
+}
+.small-btn {
+background: var(--muted-bg, #f3f4f6);
+color: var(--text-color, #111);
+padding: 8px 10px;
+border-radius: 10px;
+border: 1px solid var(--border-color, #e6eefc);
+box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+font-size: 13px;
+}
+.menu-button {
+background: var(--accent-gradient);
+color: white;
+border: none;
+padding: 8px 12px;
+border-radius: 10px;
+cursor: pointer;
+font-weight: 500;
+display: flex;
+align-items: center;
+gap: 6px;
+font-size: 13px;
+}
+
+/* Compact TA Form Header - 25% smaller */
+.ta-form-header, .night-form-header {
+border: 1px solid #000;
+padding: 3px; /* Reduced from 4px */
+margin-bottom: 6px; /* Reduced from 8px */
+background: white;
+color: black;
+font-size: 7.5px; /* Reduced from 10px */
+}
+.ta-header-grid, .night-header-grid {
+display: grid;
+grid-template-columns: 1fr 1fr;
+gap: 1.5px; /* Reduced from 2px */
+margin-top: 1.5px; /* Reduced from 2px */
+}
+.ta-header-item, .night-header-item {
+display: flex;
+align-items: center;
+gap: 1.5px; /* Reduced from 2px */
+}
+.ta-header-item label, .night-header-item label {
+font-weight: bold;
+min-width: 70px;
+font-size: 6px; /* Reduced from 8px */
+margin: 0;
+}
+.ta-header-item input, .night-header-item input {
+flex: 1;
+border: none;
+border-bottom: 1px solid #ccc;
+padding: 0.75px 1.5px; /* Reduced from 1px 2px */
+background: transparent;
+font-size: 6px; /* Reduced from 8px */
+}
+.ta-header-title, .night-header-title {
+text-align: center;
+margin-bottom: 1.5px; /* Reduced from 2px */
+font-weight: bold;
+}
+.ta-header-title div:first-child, .night-header-title div:first-child {
+font-size: 9px; /* Reduced from 12px */
+font-weight: bold;
+}
+.ta-header-title div:last-child, .night-header-title div:last-child {
+font-size: 7.5px; /* Reduced from 10px */
+}
+
+.ta-table-container, .night-table-container {
+overflow-x: auto;
+margin-bottom: 7.5px; /* Reduced from 10px */
+max-height: 500px;
+overflow-y: auto;
+}
+.ta-table-container table, .night-table-container table {
+width: 100%;
+border-collapse: collapse;
+font-size: 6.75px; /* Reduced from 9px */
+background: white;
+color: black;
+table-layout: fixed;
+min-width: 1000px;
+}
+.night-table-container table {
+min-width: 950px;
+}
+.ta-table-container th, .ta-table-container td, .night-table-container th, .night-table-container td {
+border: 1px solid #000;
+padding: 1.5px; /* Reduced from 2px */
+text-align: left;
+background: white;
+color: black;
+overflow: hidden;
+text-overflow: ellipsis;
+white-space: nowrap;
+}
+.night-table-container th, .night-table-container td {
+text-align: center;
+}
+.ta-table-container th, .night-table-container th {
+background: #f0f0f0;
+font-weight: bold;
+font-size: 6px; /* Reduced from 8px */
+}
+.night-table-container th {
+font-size: 6px; /* Reduced from 8px */
+}
+.ta-table-container input, .night-table-container input {
+width: 100%;
+border: none;
+padding: 1.5px; /* Reduced from 2px */
+background: transparent;
+color: black;
+font-size: 6px; /* Reduced from 8px */
+box-sizing: border-box;
+}
+.night-table-container input {
+font-size: 6px; /* Reduced from 8px */
+text-align: center;
+}
+.ta-table-container input:focus, .night-table-container input:focus {
+background: #f0f8ff;
+outline: 2px solid #4f46e5;
+}
+.ta-table-container .date-column {
+background: #f8f9fa;
+font-weight: 600;
+}
+.ta-table-container .date-column input {
+font-weight: 600;
+color: #1e40af;
+}
+.attendance-graph {
+width: 100%;
+background: var(--card);
+border-radius: 8px;
+padding: 10px;
+box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+margin-top: 6px;
+}
+.graph-title {
+font-size: 13px;
+font-weight: 600;
+margin-bottom: 6px;
+text-align: center;
+color: var(--muted);
+}
+.graph-bars {
+display: flex;
+justify-content: space-between;
+align-items: flex-end;
+height: 100px;
+gap: 4px;
+}
+.graph-bar-container {
+display: flex;
+flex-direction: column;
+align-items: center;
+flex: 1;
+}
+.graph-bar {
+width: 100%;
+background: var(--bg);
+border-radius: 4px;
+overflow: hidden;
+position: relative;
+height: 80px;
+}
+.graph-bar-fill {
+position: absolute;
+bottom: 0;
+left: 0;
+width: 100%;
+border-radius: 4px;
+transition: height 0.5s ease;
+}
+.graph-bar-label {
+font-size: 9px;
+margin-top: 3px;
+text-align: center;
+font-weight: 600;
+}
+.graph-bar-count {
+font-size: 10px;
+margin-top: 2px;
+font-weight: 600;
+}
+@keyframes fadeIn {
+from {
+opacity: 0;
+transform: translateY(-20px) scale(0.95);
+}
+to {
+opacity: 1;
+transform: translateY(0) scale(1);
+}
+}
+.modal {
+animation: fadeIn 0.3s ease-out;
+}
+.profile-photo-container {
+display: flex;
+justify-content: center;
+margin-bottom: 15px;
+}
+.profile-photo {
+width: 100px;
+height: 100px;
+border-radius: 50%;
+object-fit: cover;
+border: 3px solid var(--accent);
+box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+.profile-photo-placeholder {
+width: 100px;
+height: 100px;
+border-radius: 50%;
+background: var(--accent-gradient);
+display: flex;
+align-items: center;
+justify-content: center;
+color: white;
+font-size: 14px;
+font-weight: bold;
+border: 3px solid var(--accent);
+box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+.quick-mark-present {
+position: fixed;
+bottom: 20px;
+right: 20px;
+z-index: 90;
+background: var(--success-gradient);
+color: white;
+border: none;
+border-radius: 50px;
+padding: 12px 20px;
+font-weight: 600;
+box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+display: flex;
+align-items: center;
+gap: 8px;
+cursor: pointer;
+transition: all 0.3s;
+}
+.quick-mark-present:hover {
+transform: translateY(-3px);
+box-shadow: 0 8px 25px rgba(16, 185, 129, 0.5);
+}
+.notification-bell {
+position: relative;
+cursor: pointer;
+}
+.notification-badge {
+position: absolute;
+top: -5px;
+right: -5px;
+background: var(--danger);
+color: white;
+border-radius: 50%;
+width: 18px;
+height: 18px;
+display: flex;
+align-items: center;
+justify-content: center;
+font-size: 10px;
+font-weight: bold;
+}
+.report-type-selector {
+display: flex;
+gap: 8px;
+margin-bottom: 15px;
+}
+.report-type {
+flex: 1;
+text-align: center;
+padding: 12px;
+border-radius: 10px;
+background: var(--card);
+border: 1px solid var(--glass-border);
+cursor: pointer;
+transition: all 0.3s;
+}
+.report-type.active {
+background: var(--accent-gradient);
+color: white;
+border-color: var(--accent);
+}
+.report-dates {
+display: none;
+}
+.report-dates.active {
+display: block;
+}
+.report-table {
+width: 100%;
+border-collapse: collapse;
+margin-top: 15px;
+}
+.report-table th, .report-table td {
+border: 1px solid var(--glass-border);
+padding: 8px;
+text-align: left;
+}
+.report-table th {
+background: var(--accent);
+color: white;
+}
+.report-table tr:nth-child(even) {
+background: rgba(0,0,0,0.03);
+}
+.user-guide-content {
+max-height: 60vh;
+overflow-y: auto;
+padding-right: 10px;
+}
+.user-guide-section {
+margin-bottom: 20px;
+}
+.user-guide-section h3 {
+margin-bottom: 10px;
+color: var(--accent);
+}
+.user-guide-section p {
+margin-bottom: 10px;
+line-height: 1.6;
+}
+.user-guide-section ul, .user-guide-section ol {
+margin-left: 20px;
+margin-bottom: 10px;
+}
+.user-guide-section li {
+margin-bottom: 5px;
+}
+.formula-box {
+background: var(--card);
+border-radius: 8px;
+padding: 12px;
+margin: 10px 0;
+border-left: 4px solid var(--accent);
+}
+
+.cell.status-halfday {
+  background: linear-gradient(135deg, rgba(255, 165, 0, 0.15), rgba(255, 165, 0, 0.05));
+  border-left: 4px solid #f59e0b;
+}
+.cell.status-overtime {
+  background: linear-gradient(135deg, rgba(168, 85, 247, 0.15), rgba(168, 85, 247, 0.05));
+  border-left: 4px solid #8b5cf6;
+}
+.s-halfday {
+  background: linear-gradient(135deg, #f59e0b, #fbbf24);
+  color: white;
+}
+.s-overtime {
+  background: linear-gradient(135deg, #8b5cf6, #a78bfa);
+  color: white;
+}
+
+.night-footer {
+margin-top: 15px;
+padding: 15px;
+border: 1px solid #ccc;
+background: #f9f9f9;
+border-radius: 4px;
+}
+.night-footer-title {
+font-weight: bold;
+margin-bottom: 10px;
+font-size: 11px;
+}
+.night-signature-grid {
+display: grid;
+grid-template-columns: 1fr 1fr;
+gap: 30px;
+margin-top: 10px;
+}
+.night-signature-item {
+display: flex;
+flex-direction: column;
+}
+.night-signature-label {
+font-size: 9px;
+color: #666;
+margin-bottom: 5px;
+}
+.night-signature-line {
+border-bottom: 1px solid #000;
+padding-bottom: 5px;
+min-height: 25px;
+display: flex;
+align-items: flex-end;
+}
+.night-footer-note {
+margin-top: 10px;
+font-size: 9px;
+text-align: center;
+}
+
+/* New styles for sector selection */
+.sector-section {
+margin-bottom: 15px;
+}
+.sector-option {
+display: flex;
+gap: 10px;
+margin-bottom: 10px;
+}
+.sector-option label {
+display: flex;
+align-items: center;
+gap: 5px;
+cursor: pointer;
+}
+.sector-option input[type="radio"] {
+width: 18px;
+height: 18px;
+}
+.sector-details {
+display: none;
+margin-top: 10px;
+padding: 10px;
+border: 1px solid var(--glass-border);
+border-radius: 8px;
+background: rgba(255, 255, 255, 0.5);
+}
+.sector-details.active {
+display: block;
+}
+
+/* Calendar navigation styles */
+.calendar-navigation {
+display: flex;
+align-items: center;
+justify-content: space-between;
+margin-bottom: 10px;
+}
+.calendar-nav-button {
+background: var(--accent-gradient);
+color: white;
+border: none;
+border-radius: 10px;
+padding: 8px 12px;
+cursor: pointer;
+font-weight: 500;
+display: flex;
+align-items: center;
+gap: 6px;
+font-size: 13px;
+}
+.calendar-nav-button:hover {
+transform: translateY(-2px);
+box-shadow: 0 6px 16px rgba(79, 70, 229, 0.4);
+}
+
+/* Salary Calculator Styles */
+.salary-breakdown {
+margin-top: 15px;
+}
+.salary-item {
+display: flex;
+justify-content: space-between;
+padding: 8px 0;
+border-bottom: 1px solid var(--glass-border);
+}
+.salary-total {
+font-weight: bold;
+font-size: 16px;
+border-bottom: none;
+border-top: 2px solid var(--accent);
+margin-top: 8px;
+}
+.salary-section {
+margin-bottom: 15px;
+padding: 10px;
+border-radius: 8px;
+background: rgba(255, 255, 255, 0.5);
+}
+.salary-section-title {
+font-weight: bold;
+margin-bottom: 10px;
+color: var(--accent);
+}
+
+/* TA Declaration Section */
+.ta-declaration {
+margin-top: 10px;
+border: 1px solid #ccc;
+padding: 6px;
+background: #f9f9f9;
+font-size: 8px;
+line-height: 1.2;
+}
+.ta-declaration-title {
+font-weight: bold;
+margin-bottom: 3px;
+font-size: 9px;
+}
+.ta-declaration-list {
+margin: 0;
+padding-left: 12px;
+}
+.ta-declaration-list li {
+margin-bottom: 2px;
+}
+
+/* TA Certificate Note */
+.ta-certificate-note {
+margin-top: 8px;
+font-size: 8px;
+text-align: center;
+color: #666;
+line-height: 1.2;
+padding: 4px;
+border-top: 1px solid #ccc;
+}
+
+/* Login and Registration Styles */
+.auth-container {
+display: flex;
+flex-direction: column;
+align-items: center;
+justify-content: center;
+min-height: 100vh;
+padding: 20px;
+background: var(--accent-gradient);
+}
+.auth-card {
+background: var(--card);
+border-radius: var(--border-radius);
+padding: 30px;
+box-shadow: var(--shadow);
+width: 100%;
+max-width: 400px;
+}
+.auth-tabs {
+display: flex;
+margin-bottom: 20px;
+border-bottom: 1px solid var(--glass-border);
+}
+.auth-tab {
+flex: 1;
+text-align: center;
+padding: 12px;
+cursor: pointer;
+font-weight: 500;
+transition: all 0.3s;
+}
+.auth-tab.active {
+border-bottom: 2px solid var(--accent);
+color: var(--accent);
+}
+.auth-form {
+display: none;
+}
+.auth-form.active {
+display: block;
+}
+.auth-footer {
+margin-top: 20px;
+text-align: center;
+font-size: 14px;
+}
+.auth-switch {
+color: var(--accent);
+cursor: pointer;
+font-weight: 600;
+}
+.logout-btn {
+background: var(--danger-gradient);
+margin-top: 15px;
+width: 100%;
+}
+
+/* Rest Tracking Modal */
+.rest-tracking-modal .rest-details-grid {
+display: grid;
+grid-template-columns: 1fr 1fr;
+gap: 15px;
+margin-top: 15px;
+}
+.rest-detail-card {
+background: var(--card);
+border-radius: 10px;
+padding: 15px;
+text-align: center;
+box-shadow: var(--shadow);
+border-left: 4px solid var(--rest);
+}
+.rest-detail-value {
+font-size: 24px;
+font-weight: bold;
+color: var(--rest);
+margin: 10px 0;
+}
+.rest-detail-label {
+font-size: 14px;
+color: var(--muted);
+}
+.rest-progress-bar {
+width: 100%;
+height: 10px;
+background: #e5e7eb;
+border-radius: 5px;
+overflow: hidden;
+margin: 15px 0;
+}
+.rest-progress-fill {
+height: 100%;
+background: var(--rest-gradient);
+transition: width 0.3s ease;
+}
+.rest-next-rest {
+background: var(--rest);
+color: white;
+padding: 8px 12px;
+border-radius: 20px;
+font-size: 12px;
+font-weight: 600;
+margin-top: 10px;
+display: inline-block;
+}
+
+/* New styles for status tracking modals */
+.status-tracking-modal .status-details-grid {
+display: grid;
+grid-template-columns: 1fr 1fr;
+gap: 15px;
+margin-top: 15px;
+}
+.status-detail-card {
+background: var(--card);
+border-radius: 10px;
+padding: 15px;
+text-align: center;
+box-shadow: var(--shadow);
+}
+.status-detail-value {
+font-size: 24px;
+font-weight: bold;
+margin: 10px 0;
+}
+.status-detail-label {
+font-size: 14px;
+color: var(--muted);
+}
+.status-dates-list {
+max-height: 200px;
+overflow-y: auto;
+margin-top: 15px;
+border: 1px solid var(--glass-border);
+border-radius: 8px;
+padding: 10px;
+}
+.status-date-item {
+padding: 8px;
+border-bottom: 1px solid var(--glass-border);
+display: flex;
+justify-content: space-between;
+}
+.status-date-item:last-child {
+border-bottom: none;
+}
+
+@media print {
+body {
+background: white;
+color: black;
+}
+.card {
+box-shadow: none;
+border: 1px solid #ddd;
+}
+button, .actions, .controls select, .menu-button, .quick-mark-present {
+display: none !important;
+}
+header {
+position: static;
+}
+.ta-declaration, .ta-certificate-note {
+display: block !important;
+}
+}
+@media (max-width: 1024px) {
+.card {
+padding: 14px;
+}
+.container {
+padding: 10px;
+}
+.controls {
+gap: 6px;
+}
+.top-stats {
+width: 100%;
+justify-content: space-between;
+margin-top: 6px;
+}
+.stat {
+flex: 1;
+min-width: auto;
+padding: 8px 10px;
+}
+.calendar {
+grid-template-columns: repeat(7, 1fr);
+gap: 5px;
+}
+.cell {
+min-height: 60px;
+padding: 5px;
+}
+.date-num {
+font-size: 14px;
+}
+.status {
+font-size: 9px;
+padding: 2px 6px;
+}
+.ta-indicator, .night-indicator {
+font-size: 8px;
+padding: 1px 4px;
+}
+}
+@media (max-width: 768px) {
+header {
+padding: 10px 12px;
+}
+header h1 {
+font-size: 14px;
+flex-direction: column;
+align-items: flex-start;
+gap: 4px;
+}
+.header-pay-rate {
+font-size: 11px;
+padding: 2px 6px;
+}
+.controls {
+flex-direction: column;
+align-items: stretch;
+}
+select, input[type="month"] {
+min-width: auto;
+width: 100%;
+}
+.calendar {
+grid-template-columns: repeat(7, 1fr);
+}
+.cell {
+min-height: 55px;
+padding: 4px;
+}
+.date-num {
+font-size: 13px;
+}
+.status {
+font-size: 8px;
+padding: 2px 4px;
+right: 4px;
+top: 4px;
+}
+.modal {
+padding: 14px;
+margin: 8px;
+}
+.form-row {
+flex-direction: column;
+gap: 10px;
+}
+.ta-header-grid, .night-header-grid {
+grid-template-columns: 1fr;
+}
+.quick-mark-present {
+bottom: 15px;
+right: 15px;
+padding: 10px 16px;
+font-size: 13px;
+}
+.night-header-grid {
+grid-template-columns: 1fr;
+}
+.night-signature-grid {
+grid-template-columns: 1fr;
+gap: 15px;
+}
+.ta-declaration {
+font-size: 7px;
+}
+.ta-certificate-note {
+font-size: 7px;
+}
+.rest-tracking-modal .rest-details-grid {
+grid-template-columns: 1fr;
+}
+.status-tracking-modal .status-details-grid {
+grid-template-columns: 1fr;
+}
+}
+@media (max-width: 480px) {
+.calendar {
+grid-template-columns: repeat(7, 1fr);
+gap: 3px;
+}
+.cell {
+min-height: 50px;
+padding: 3px;
+}
+.date-num {
+font-size: 12px;
+}
+.day-header {
+font-size: 11px;
+padding: 5px 2px;
+}
+.actions {
+justify-content: center;
+}
+button {
+flex: 1;
+min-width: 100px;
+padding: 8px 10px;
+font-size: 12px;
+}
+.stat {
+padding: 6px 8px;
+min-width: 70px;
+}
+.ta-indicator, .night-indicator {
+font-size: 7px;
+padding: 1px 3px;
+left: 3px;
+top: 3px;
+}
+.night-indicator {
+bottom: 3px;
+top: auto;
+}
+.graph-bars {
+height: 80px;
+}
+.graph-bar {
+height: 70px;
+}
+.ta-table-container, .night-table-container {
+margin: 0 -12px;
+padding: 0 12px;
+}
+.quick-mark-present {
+bottom: 10px;
+right: 10px;
+padding: 8px 14px;
+font-size: 12px;
+}
+.ta-declaration {
+font-size: 6px;
+padding: 4px;
+}
+.ta-certificate-note {
+font-size: 6px;
+padding: 3px;
+}
+.rest-detail-value {
+font-size: 20px;
+}
+.status-detail-value {
+font-size: 20px;
+}
+}
+@media (max-width: 360px) {
+.calendar {
+gap: 2px;
+}
+.cell {
+min-height: 45px;
+}
+.date-num {
+font-size: 11px;
+}
+.day-header {
+font-size: 10px;
+}
+button {
+min-width: 90px;
+padding: 6px 8px;
+font-size: 11px;
+}
+.stat {
+padding: 5px 6px;
+min-width: 60px;
+}
+.quick-mark-present {
+padding: 6px 12px;
+font-size: 11px;
+}
+.ta-declaration {
+font-size: 5.5px;
+}
+.ta-certificate-note {
+font-size: 5.5px;
+}
+}
+
+/* Compact one-page report print styles added by patch */
+.compact-report-print .modal { max-width: 100% !important; width: 100% !important; }
+.compact-report-print .modal .report-table th, .compact-report-print .modal .report-table td { padding:6px; font-size:12px; }
+@media print {
+  .modal { box-shadow:none !important; border:none !important; max-width: 100% !important; }
+  .modal, body { margin:0; padding:0; }
+  .modal-backdrop { position: static !important; background: #fff !important; }
+  .no-print, button, .menu-button, .quick-mark-present, .actions, header { display:none !important; }
+  .report-table th, .report-table td { font-size: 11px !important; padding:4px !important; }
+  .modal { page-break-after: avoid; page-break-inside: avoid; }
+  .ta-declaration, .ta-certificate-note { display: block !important; }
+}
+
+</style>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+</head>
+<body>
+
+<!-- Authentication Container (Shown first) -->
+<div id="authContainer" class="auth-container">
+  <div class="auth-card">
+    <div class="auth-tabs">
+      <div class="auth-tab active" id="loginTab">Login</div>
+      <div class="auth-tab" id="registerTab">Register</div>
+    </div>
+    
+    <form id="loginForm" class="auth-form active">
+      <h3 style="text-align: center; margin-bottom: 20px;">Welcome Back</h3>
+      <div class="form-row">
+        <div style="flex:1">
+          <label>Email or Mobile</label>
+          <input id="loginEmail" placeholder="Enter your email or mobile" type="text" required/>
+        </div>
+      </div>
+      <div class="form-row">
+        <div style="flex:1">
+          <label>Password</label>
+          <input id="loginPassword" placeholder="Enter your password" type="password" required/>
+        </div>
+      </div>
+      <div style="margin-top: 15px;">
+        <button type="submit" style="width: 100%;">Login</button>
+      </div>
+      <div class="auth-footer">
+        Don't have an account? <span class="auth-switch" id="switchToRegister">Register here</span>
+      </div>
+    </form>
+    
+    <form id="registerForm" class="auth-form">
+      <h3 style="text-align: center; margin-bottom: 20px;">Create Account</h3>
+      <div class="form-row">
+        <div style="flex:1">
+          <label>Full Name *</label>
+          <input id="registerName" placeholder="Enter your full name" type="text" required/>
+        </div>
+      </div>
+      <div class="form-row">
+        <div style="flex:1">
+          <label>Email *</label>
+          <input id="registerEmail" placeholder="Enter your email" type="email" required/>
+        </div>
+      </div>
+      <div class="form-row">
+        <div style="flex:1">
+          <label>Mobile Number *</label>
+          <input id="registerMobile" placeholder="Enter your mobile number" type="text" required/>
+        </div>
+      </div>
+      <div class="form-row">
+        <div style="flex:1">
+          <label>Password *</label>
+          <input id="registerPassword" placeholder="Create a password" type="password" required/>
+        </div>
+      </div>
+      <div style="margin-top: 15px;">
+        <button type="submit" style="width: 100%;">Register</button>
+      </div>
+      <div class="auth-footer">
+        Already have an account? <span class="auth-switch" id="switchToLogin">Login here</span>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Main App Container (Hidden initially) -->
+<div id="appContainer" style="display: none;">
+<header>
+<h1>Smart Duty Attendance with TA &amp; Night Form <span class="header-pay-rate" id="headerPayRate"></span></h1>
+<div class="header-controls">
+<div class="notification-bell" id="notificationBell">
+<span>🔔</span>
+<span class="notification-badge" id="notificationBadge" style="display: none;">1</span>
+</div>
+<button class="menu-button" id="menuToggle">☰ Menu</button>
+<div class="small muted">Local • Auto-save</div>
+</div>
+</header>
+<div class="main-container">
+<div class="calendar-view active" id="calendarView">
+<div class="container">
+<div class="card">
+<div class="calendar-navigation">
+<button class="calendar-nav-button" id="prevMonth">◀ Previous</button>
+<div style="text-align: center;">
+<strong id="monthLabel"></strong>
+<div class="small" id="monthRange"></div>
+</div>
+<button class="calendar-nav-button" id="nextMonth">Next ▶</button>
+</div>
+<div class="small" style="text-align: center; margin-bottom: 10px;">Tap a date to edit • Long-press to quick toggle Present</div>
+<div class="calendar" id="calendar">
+</div>
+<!-- Compact colourful Month Summary below calendar -->
+<div class="card" id="compactMonthSummary" style="margin-top:10px;padding:10px;border-radius:12px;box-shadow:0 4px 12px rgba(0,0,0,0.05);display:flex;justify-content:space-around;flex-wrap:wrap;gap:6px;">
+<div style="background:var(--success-gradient);color:white;padding:6px 10px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;" id="presentSummaryElement">P: <span id="sumPresent">0</span></div>
+<div style="background:var(--danger-gradient);color:white;padding:6px 10px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;" id="absentSummaryElement">A: <span id="sumAbsent">0</span></div>
+<div style="background:var(--yellow-gradient);color:white;padding:6px 10px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;" id="leaveSummaryElement">L: <span id="sumLeave">0</span></div>
+<div style="background:var(--rest-gradient);color:white;padding:6px 10px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;" id="restSummaryElement">R: <span id="sumRest">0</span></div>
+<div style="background:var(--holiday-gradient);color:white;padding:6px 10px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;" id="holidaySummaryElement">H: <span id="sumHoliday">0</span></div>
+</div>
+</div>
+</div>
+</div>
+<div class="sidebar-menu" id="sidebarMenu">
+<div class="container">
+<div class="card">
+<div class="profile-section">
+<div class="profile-photo-container">
+<div id="profilePhotoContainer">
+</div>
+</div>
+<div id="sidebarProfileName" style="font-weight: 600; font-size: 15px; text-align: center;">Smart Duty Attendance</div>
+<div class="small" id="sidebarProfileInfo" style="text-align: center;">Track your duty days and TA</div>
+<div class="attendance-graph">
+<div class="graph-title">This Month's Attendance</div>
+<div class="graph-bars">
+<div class="graph-bar-container">
+<div class="graph-bar">
+<div class="graph-bar-fill" id="graphPresent" style="background: var(--success-gradient); height: 0%;"></div>
+</div>
+<div class="graph-bar-label">Present</div>
+<div class="graph-bar-count" id="graphPresentCount">0</div>
+</div>
+<div class="graph-bar-container">
+<div class="graph-bar">
+<div class="graph-bar-fill" id="graphAbsent" style="background: var(--danger-gradient); height: 0%;"></div>
+</div>
+<div class="graph-bar-label">Absent</div>
+<div class="graph-bar-count" id="graphAbsentCount">0</div>
+</div>
+<div class="graph-bar-container">
+<div class="graph-bar">
+<div class="graph-bar-fill" id="graphLeave" style="background: var(--yellow-gradient); height: 0%;"></div>
+</div>
+<div class="graph-bar-label">Leave</div>
+<div class="graph-bar-count" id="graphLeaveCount">0</div>
+</div>
+<div class="graph-bar-container">
+<div class="graph-bar">
+<div class="graph-bar-fill" id="graphRest" style="background: var(--rest-gradient); height: 0%;"></div>
+</div>
+<div class="graph-bar-label">Rest</div>
+<div class="graph-bar-count" id="graphRestCount">0</div>
+</div>
+<div class="graph-bar-container">
+<div class="graph-bar">
+<div class="graph-bar-fill" id="graphHoliday" style="background: var(--holiday-gradient); height: 0%;"></div>
+</div>
+<div class="graph-bar-label">Holiday</div>
+<div class="graph-bar-count" id="graphHolidayCount">0</div>
+</div>
+</div>
+<div class="card" style="display:none;">
+<h3>Controls</h3>
+<div class="controls">
+<div style="display: flex; gap: 6px; width: 100%;">
+<select id="yearSelect" style="flex: 1;">
+<option value="2023">2023</option>
+<option selected="" value="2024">2024</option>
+<option value="2025">2025</option>
+<option value="2026">2026</option>
+</select>
+<select id="monthSelect" style="flex: 1;">
+<option value="1">January</option>
+<option value="2">February</option>
+<option value="3">March</option>
+<option value="4">April</option>
+<option value="5">May</option>
+<option value="6">June</option>
+<option value="7">July</option>
+<option value="8">August</option>
+<option value="9">September</option>
+<option value="10">October</option>
+<option value="11">November</option>
+<option value="12">December</option>
+</select>
+</div>
+<select id="shiftPreset" style="width: 100%;">
+<option value="any">Shift Preset</option>
+<option value="morning">Morning (09:00 - 17:00)</option>
+<option value="evening">Evening (14:00 - 22:00)</option>
+<option value="night">Night (22:00 - 06:00)</option>
+</select>
+<div class="top-stats">
+<div class="stat"><div class="muted">Days</div><div id="statDays">0</div></div>
+<div class="stat"><div class="muted">Total Hrs</div><div id="statHours">0h</div></div>
+<div class="stat"><div class="muted">Present</div><div id="statPresent">0</div></div>
+<div class="stat"><div class="muted">Leave</div><div id="statLeave">0</div></div>
+<div class="stat"><div class="muted">Rest</div><div id="statRest">0</div></div>
+<div class="stat"><div class="muted">Holiday</div><div id="statHoliday">0</div></div>
+</div>
+</div>
+</div>
+<div class="card">
+<h3>Actions</h3>
+<div style="display:flex;gap:6px;flex-wrap:wrap">
+<button id="exportCsv">Export CSV</button>
+<button class="small-btn" id="exportPdf">Export PDF</button>
+<button class="small-btn" id="printReport">Print</button>
+<button class="small-btn" id="generateReport" style="background:var(--accent-gradient)">Generate Report</button>
+</div>
+<div style="margin-top:12px;display:flex;gap:6px;flex-wrap:wrap">
+<button id="setupProfile" style="background:var(--success-gradient)">Setup Profile</button>
+<button id="openSalaryCalculator" style="background: var(--accent-gradient); margin-top:8px;">Open Salary Calculator</button>
+</div>
+<div style="margin-top:12px;display:flex;gap:6px;flex-wrap:wrap">
+<button id="openTaForm" style="background:var(--yellow-gradient); display: none;">Open TA Form</button>
+</div>
+<div style="margin-top:12px;display:flex;gap:6px;flex-wrap:wrap">
+<button id="openNightForm" style="background:var(--night-gradient); display: none;">Open Night Form</button>
+</div>
+<div style="margin-top:12px;display:flex;gap:6px;flex-wrap:wrap">
+<button id="openUserGuide" style="background:var(--holiday-gradient)">User Guide</button>
+</div>
+<div style="margin-top:12px;display:flex;gap:6px;flex-wrap:wrap">
+<button id="openResetOptions" style="background:var(--danger-gradient)">Reset Options</button>
+</div>
+<div style="margin-top:12px;display:flex;gap:6px;flex-wrap:wrap">
+<button id="logoutBtn" class="logout-btn">Logout</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="card">
+<footer class="note">Tip: First setup your profile, then use TA Form for travelling allowance.</footer>
+</div>
+</div>
+</div>
+<button class="quick-mark-present" id="quickMarkPresent">
+<span>✓</span> Mark Today Present
+</button>
+<div class="modal-backdrop" id="modalBackdrop">
+<div aria-modal="true" class="modal" role="dialog">
+<h3 id="modalTitle">Details</h3>
+<div style="display:flex;gap:8px;align-items:center;margin-bottom:6px;flex-wrap:wrap;">
+<div class="small">Date: <strong id="modalDate"></strong></div>
+<div style="margin-left:auto"><span class="small muted" id="modalDayName"></span></div>
+</div>
+<div>
+<label>Status</label>
+<select id="statusSelect">
+<option value="">-- choose --</option>
+<option value="present">Present</option>
+<option value="absent">Absent</option>
+<option value="leave">Leave</option>
+<option value="rest">Rest</option>
+<option value="holiday">Holiday</option>
+<option value="halfday">Half Day</option>
+<option value="overtime">Overtime</option>
+</select>
+</div>
+<div id="leaveTypeFields" style="display:none; margin-top:10px;">
+<label>Leave Type</label>
+<select id="leaveTypeSelect">
+<option value="">-- select leave type --</option>
+<option value="CL">CL (Casual Leave)</option>
+<option value="LAP">LAP (Leave on Average Pay)</option>
+<option value="HLAP">HLAP/SICK (Half Pay Leave/Sick Leave)</option>
+<option value="OL">OL (Other Leave)</option>
+</select>
+</div>
+<div id="presentFields" style="display:none;">
+<div class="form-row">
+<div style="flex:1">
+<label>Duty ON (time)</label>
+<input id="timeOn" type="time"/>
+</div>
+<div style="flex:1">
+<label>Duty OFF (time)</label>
+<input id="timeOff" type="time"/>
+</div>
+</div>
+<div class="form-row">
+<div style="flex:1">
+<label>Shift</label>
+<select id="shiftSelect">
+<option value="">-- select --</option>
+<option value="morning">Morning</option>
+<option value="evening">Evening</option>
+<option value="night">Night</option>
+<option value="other">Other</option>
+</select>
+</div>
+<div style="flex:1">
+<label>Duty Duration</label>
+<input id="duration" placeholder="auto-calculated" readonly="" type="text"/>
+</div>
+</div>
+<div style="margin-top:6px">
+<label>
+<input id="taApplicable" type="checkbox"/> Travel Allowance (TA) Applicable
+</label>
+<div id="taFields" style="display:none; margin-top:6px">
+<div class="form-row">
+<div style="flex:1">
+<label>Travel Mode</label>
+<select id="taTravelMode">
+<option value="train">By Train</option>
+<option value="road">By Road</option>
+</select>
+</div>
+</div>
+<div id="trainNoContainer" style="display:none;">
+<div class="form-row">
+<div style="flex:1">
+<label>Onward Train No.</label>
+<input id="taOnwardTrainNo" placeholder="Onward train number" type="text"/>
+</div>
+<div style="flex:1">
+<label>Return Train No.</label>
+<input id="taReturnTrainNo" placeholder="Return train number" type="text"/>
+</div>
+</div>
+</div>
+<div style="display:flex;gap:6px;margin-top:4px;flex-wrap:wrap;">
+<input id="taFrom" placeholder="From (place)" style="flex:1;" type="text"/>
+<input id="taTo" placeholder="To (place)" style="flex:1;" type="text"/>
+</div>
+<div class="form-row">
+<div style="flex:1">
+<label class="small">Departure Time (From HQ)</label>
+<input id="taDepartureTime" type="time"/>
+</div>
+<div style="flex:1">
+<label class="small">Arrival Time (At Destination)</label>
+<input id="taArrivalTime" type="time"/>
+</div>
+</div>
+<div class="form-row">
+<div style="flex:1">
+<label class="small">Return Departure Time</label>
+<input id="taReturnDepartureTime" type="time"/>
+</div>
+<div style="flex:1">
+<label class="small">Return Arrival Time (At HQ)</label>
+<input id="taReturnArrivalTime" type="time"/>
+</div>
+</div>
+<div style="margin-top:6px">
+<label>Object of Journey</label>
+<input id="taObject" placeholder="Purpose of travel" type="text"/>
+</div>
+</div>
+</div>
+<div style="margin-top:6px">
+<label>
+<input id="nightDutyApplicable" type="checkbox"/> Night Duty Applicable
+</label>
+<div id="nightDutyFields" style="display:none; margin-top:6px">
+<div class="form-row">
+<div style="flex:1">
+<label>Night Shift From</label>
+<input id="nightShiftFrom" type="time" value="22:00"/>
+</div>
+<div style="flex:1">
+<label>Night Shift To</label>
+<input id="nightShiftTo" type="time" value="06:00"/>
+</div>
+</div>
+<div class="form-row">
+<div style="flex:1">
+<label>Night Duty From (22-06hrs)</label>
+<input id="nightDutyFrom" type="time" value="22:00"/>
+</div>
+<div style="flex:1">
+<label>Night Duty To (22-06hrs)</label>
+<input id="nightDutyTo" type="time" value="06:00"/>
+</div>
+</div>
+<div class="form-row">
+<div style="flex:1">
+<label>Total Night Hours</label>
+<input id="nightDutyHours" placeholder="auto-calculated" readonly="" type="text"/>
+</div>
+<div style="flex:1">
+<label>Weighted Hours (1 hour = 10 mins)</label>
+<input id="nightWeightedHours" placeholder="auto-calculated" readonly="" type="text"/>
+</div>
+</div>
+<div style="margin-top:6px">
+<label>Object of Night Duty</label>
+<input id="nightDutyObject" placeholder="Purpose of night duty" type="text"/>
+</div>
+</div>
+</div>
+</div>
+<div style="margin-top:6px">
+<label>Notes</label>
+<textarea id="notes" rows="3"></textarea>
+</div>
+<div style="display:flex;gap:6px;justify-content:flex-end;margin-top:10px;flex-wrap:wrap;">
+<button id="deleteEntry" style="background:var(--danger-gradient)">Delete</button>
+<button id="closeModal" style="background:#94a3b8">Cancel</button>
+<button id="saveEntry">Save</button>
+</div>
+</div>
+</div>
+
+<!-- Rest Tracking Modal -->
+<div class="modal-backdrop" id="restTrackingModalBackdrop">
+<div aria-modal="true" class="modal rest-tracking-modal" role="dialog">
+<h3>Rest Day Tracking - Last 60 Days</h3>
+<div class="rest-details-grid">
+<div class="rest-detail-card">
+<div class="rest-detail-label">Total Working Days</div>
+<div class="rest-detail-value" id="totalWorkingDays">0</div>
+<div class="small">Since tracking started</div>
+</div>
+<div class="rest-detail-card">
+<div class="rest-detail-label">Rest Days Earned</div>
+<div class="rest-detail-value" id="restDaysEarned">0</div>
+<div class="small">Every 6 working days</div>
+</div>
+<div class="rest-detail-card">
+<div class="rest-detail-label">Rest Days Taken</div>
+<div class="rest-detail-value" id="restDaysTaken">0</div>
+<div class="small">This month: <span id="restDaysThisMonth">0</span></div>
+</div>
+<div class="rest-detail-card">
+<div class="rest-detail-label">Rest Balance</div>
+<div class="rest-detail-value" id="restBalance">0</div>
+<div class="small">Available rest days</div>
+</div>
+</div>
+<div class="rest-progress-bar">
+<div class="rest-progress-fill" id="restProgressFill" style="width: 0%;"></div>
+</div>
+<div style="text-align: center; margin-top: 15px;">
+<div class="small" style="margin-bottom: 10px;">Next rest day after <strong id="nextRestAfter">0</strong> more working days</div>
+<div class="rest-next-rest" id="nextRestInfo">No rest due soon</div>
+</div>
+<div class="status-dates-list" id="restDatesList">
+<div class="small" style="text-align: center; padding: 10px;">Loading rest dates...</div>
+</div>
+<div style="display:flex;gap:6px;justify-content:flex-end;margin-top:15px;flex-wrap:wrap;">
+<button id="closeRestTrackingModal" style="background:#94a3b8">Close</button>
+</div>
+</div>
+</div>
+
+<!-- Present Tracking Modal -->
+<div class="modal-backdrop" id="presentTrackingModalBackdrop">
+<div aria-modal="true" class="modal status-tracking-modal" role="dialog">
+<h3>Present Days - Last 60 Days</h3>
+<div class="status-details-grid">
+<div class="status-detail-card" style="border-left: 4px solid var(--success);">
+<div class="status-detail-label">Total Present Days</div>
+<div class="status-detail-value" id="totalPresentDays" style="color: var(--success);">0</div>
+<div class="small">Last 60 days</div>
+</div>
+<div class="status-detail-card" style="border-left: 4px solid var(--success);">
+<div class="status-detail-label">Present This Month</div>
+<div class="status-detail-value" id="presentThisMonth" style="color: var(--success);">0</div>
+<div class="small">Current month</div>
+</div>
+</div>
+<div class="status-dates-list" id="presentDatesList">
+<div class="small" style="text-align: center; padding: 10px;">Loading present dates...</div>
+</div>
+<div style="display:flex;gap:6px;justify-content:flex-end;margin-top:15px;flex-wrap:wrap;">
+<button id="closePresentTrackingModal" style="background:#94a3b8">Close</button>
+</div>
+</div>
+</div>
+
+<!-- Absent Tracking Modal -->
+<div class="modal-backdrop" id="absentTrackingModalBackdrop">
+<div aria-modal="true" class="modal status-tracking-modal" role="dialog">
+<h3>Absent Days - Last 60 Days</h3>
+<div class="status-details-grid">
+<div class="status-detail-card" style="border-left: 4px solid var(--danger);">
+<div class="status-detail-label">Total Absent Days</div>
+<div class="status-detail-value" id="totalAbsentDays" style="color: var(--danger);">0</div>
+<div class="small">Last 60 days</div>
+</div>
+<div class="status-detail-card" style="border-left: 4px solid var(--danger);">
+<div class="status-detail-label">Absent This Month</div>
+<div class="status-detail-value" id="absentThisMonth" style="color: var(--danger);">0</div>
+<div class="small">Current month</div>
+</div>
+</div>
+<div class="status-dates-list" id="absentDatesList">
+<div class="small" style="text-align: center; padding: 10px;">Loading absent dates...</div>
+</div>
+<div style="display:flex;gap:6px;justify-content:flex-end;margin-top:15px;flex-wrap:wrap;">
+<button id="closeAbsentTrackingModal" style="background:#94a3b8">Close</button>
+</div>
+</div>
+</div>
+
+<!-- Leave Tracking Modal -->
+<div class="modal-backdrop" id="leaveTrackingModalBackdrop">
+<div aria-modal="true" class="modal status-tracking-modal" role="dialog">
+<h3>Leave Days - Last 60 Days</h3>
+<div class="status-details-grid">
+<div class="status-detail-card" style="border-left: 4px solid var(--yellow);">
+<div class="status-detail-label">Total Leave Days</div>
+<div class="status-detail-value" id="totalLeaveDays" style="color: var(--yellow);">0</div>
+<div class="small">Last 60 days</div>
+</div>
+<div class="status-detail-card" style="border-left: 4px solid var(--yellow);">
+<div class="status-detail-label">Leave This Month</div>
+<div class="status-detail-value" id="leaveThisMonth" style="color: var(--yellow);">0</div>
+<div class="small">Current month</div>
+</div>
+</div>
+<div class="status-dates-list" id="leaveDatesList">
+<div class="small" style="text-align: center; padding: 10px;">Loading leave dates...</div>
+</div>
+<div style="display:flex;gap:6px;justify-content:flex-end;margin-top:15px;flex-wrap:wrap;">
+<button id="closeLeaveTrackingModal" style="background:#94a3b8">Close</button>
+</div>
+</div>
+</div>
+
+<!-- Holiday Tracking Modal -->
+<div class="modal-backdrop" id="holidayTrackingModalBackdrop">
+<div aria-modal="true" class="modal status-tracking-modal" role="dialog">
+<h3>Holiday Days - Last 60 Days</h3>
+<div class="status-details-grid">
+<div class="status-detail-card" style="border-left: 4px solid var(--holiday);">
+<div class="status-detail-label">Total Holiday Days</div>
+<div class="status-detail-value" id="totalHolidayDays" style="color: var(--holiday);">0</div>
+<div class="small">Last 60 days</div>
+</div>
+<div class="status-detail-card" style="border-left: 4px solid var(--holiday);">
+<div class="status-detail-label">Holiday This Month</div>
+<div class="status-detail-value" id="holidayThisMonth" style="color: var(--holiday);">0</div>
+<div class="small">Current month</div>
+</div>
+</div>
+<div class="status-dates-list" id="holidayDatesList">
+<div class="small" style="text-align: center; padding: 10px;">Loading holiday dates...</div>
+</div>
+<div style="display:flex;gap:6px;justify-content:flex-end;margin-top:15px;flex-wrap:wrap;">
+<button id="closeHolidayTrackingModal" style="background:#94a3b8">Close</button>
+</div>
+</div>
+</div>
+
+<div class="modal-backdrop" id="profileModalBackdrop">
+<div aria-modal="true" class="modal" role="dialog" style="max-width: 95%;">
+<h3>Setup Your Profile</h3>
+<div class="profile-photo-container">
+<div id="profilePhotoPreviewContainer">
+</div>
+</div>
+<div style="margin-top: 10px; text-align: center;">
+<input accept="image/*" id="profilePhotoUpload" style="display: none;" type="file"/>
+<button class="small-btn" id="uploadPhotoBtn" style="margin: 0 auto;">Upload Profile Photo</button>
+</div>
+<div class="sector-section">
+<label>Sector</label>
+<div class="sector-option">
+<label><input name="sector" type="radio" value="government"/> Government</label>
+<label><input name="sector" type="radio" value="private"/> Private</label>
+</div>
+<div class="sector-details" id="governmentSectorDetails">
+<div class="form-row">
+<div style="flex:1">
+<label>Government Type</label>
+<select id="governmentType" style="width: 100%;">
+<option value="">-- Select Type --</option>
+<option value="centre">Centre</option>
+<option value="state">State</option>
+</select>
+</div>
+<div style="flex:1">
+<label>Department</label>
+<select id="governmentDepartment" style="width: 100%;">
+<option value="">-- Select Department --</option>
+<option value="railway">Railway</option>
+<option value="education">Education</option>
+<option value="health">Health</option>
+<option value="police">Police</option>
+<option value="defense">Defense</option>
+<option value="finance">Finance</option>
+<option value="transport">Transport</option>
+<option value="others">Others</option>
+</select>
+</div>
+</div>
+</div>
+<div class="sector-details" id="privateSectorDetails">
+<div class="form-row">
+<div style="flex:1">
+<label>Company Name</label>
+<input id="companyName" placeholder="Enter company name" style="width: 100%;" type="text"/>
+</div>
+<div style="flex:1">
+<label>Industry</label>
+<input id="industry" placeholder="Enter industry" style="width: 100%;" type="text"/>
+</div>
+</div>
+</div>
+</div>
+<div style="margin-top:12px;">
+<label>Employee Name</label>
+<input id="profileEmployeeName" placeholder="Enter your full name" style="width: 100%;" type="text"/>
+</div>
+<div style="margin-top:10px;">
+<label>Father's Name</label>
+<input id="profileFatherName" placeholder="Enter father's name" style="width: 100%;" type="text"/>
+</div>
+<div style="margin-top:10px;">
+<label>Designation</label>
+<input id="profileDesignation" placeholder="Enter your designation" style="width: 100%;" type="text"/>
+</div>
+<div style="margin-top:10px;">
+<label>Department</label>
+<input id="profileDepartment" placeholder="Enter department" style="width: 100%;" type="text"/>
+</div>
+<div style="margin-top:10px;">
+<label>Head Quarter</label>
+<input id="profileHeadQuarter" placeholder="Enter head quarter" style="width: 100%;" type="text"/>
+</div>
+<div class="form-row">
+<div style="flex:1">
+<label>Employment No</label>
+<input id="profileEmpNo" placeholder="Enter employment number" style="width: 100%;" type="text"/>
+</div>
+<div style="flex:1">
+<label>Basic Pay (Rs.)</label>
+<input id="profileBasicPay" placeholder="18000" style="width: 100%;" type="text"/>
+</div>
+</div>
+<div class="form-row">
+<div style="flex:1">
+<label>DA Percentage (%)</label>
+<input id="profileDAPercentage" placeholder="50" style="width: 100%;" type="text"/>
+</div>
+<div style="flex:1">
+<label>DA Amount (Rs.)</label>
+<input id="profileDAAmount" placeholder="9000" readonly="" style="width: 100%;" type="text"/>
+</div>
+</div>
+<div style="margin-top:10px;">
+<label>Date of Appointment (D.O.A)</label>
+<input id="profileDOA" placeholder="DD/MM/YYYY" style="width: 100%;" type="text"/>
+</div>
+<div id="railwayZoneSection" style="margin-top:10px; display: none;">
+<label>Railway Zone</label>
+<select id="profileRailwayZone" style="width: 100%;">
+<option value="">-- Select Railway Zone --</option>
+<option value="Northern Railway">Northern Railway</option>
+<option value="Southern Railway">Southern Railway</option>
+<option value="Eastern Railway">Eastern Railway</option>
+<option value="Western Railway">Western Railway</option>
+<option value="Central Railway">Central Railway</option>
+<option value="North Eastern Railway">North Eastern Railway</option>
+<option value="Northeast Frontier Railway">Northeast Frontier Railway</option>
+<option value="East Central Railway">East Central Railway</option>
+<option value="East Coast Railway">East Coast Railway</option>
+<option value="North Central Railway">North Central Railway</option>
+<option value="North Western Railway">North Western Railway</option>
+<option value="South Central Railway">South Central Railway</option>
+<option value="South Eastern Railway">South Eastern Railway</option>
+<option value="South East Central Railway">South East Central Railway</option>
+<option value="South Western Railway">South Western Railway</option>
+<option value="West Central Railway">West Central Railway</option>
+<option value="Metro Railway, Kolkata">Metro Railway, Kolkata</option>
+</select>
+</div>
+<div id="taRateSection" style="margin-top:10px; display: none;">
+<label>TA Rate (Rs.)</label>
+<input id="profileTaRate" placeholder="635" style="width: 100%;" type="text"/>
+</div>
+<div style="display:flex;gap:6px;justify-content:flex-end;margin-top:15px;flex-wrap:wrap;">
+<button id="closeProfileModal" style="background:#94a3b8">Cancel</button>
+<button id="saveProfile" style="background:var(--success-gradient)">Save Profile</button>
+</div>
+</div>
+</div>
+<div class="modal-backdrop" id="taModalBackdrop">
+<div aria-modal="true" class="modal" role="dialog" style="max-width: 95%;">
+<h3 id="taFormTitle" style="margin-bottom: 10px; font-size: 15px;">Travelling Allowance Form</h3>
+<div class="ta-form-header">
+<div class="ta-header-title">
+<div id="taRailwayZone" style="font-size: 9px; font-weight: bold;">RAILWAY ZONE</div>
+<div style="font-size: 7.5px;">Travelling Allowance Journal</div>
+</div>
+<div class="ta-header-grid">
+<div class="ta-header-item">
+<label>Department:</label>
+<input id="taDepartment" placeholder="Head Quarters" type="text"/>
+</div>
+<div class="ta-header-item">
+<label>Head Quarter:</label>
+<input id="taHeadQuarter" placeholder="Head Quarter" type="text"/>
+</div>
+<div class="ta-header-item">
+<label>Employee Name:</label>
+<input id="taEmployeeName" placeholder="Full Name" type="text"/>
+</div>
+<div class="ta-header-item">
+<label>Father's Name:</label>
+<input id="taFatherName" placeholder="Father's Name" type="text"/>
+</div>
+<div class="ta-header-item">
+<label>Designation:</label>
+<input id="taDesignation" placeholder="T.M.TX" type="text"/>
+</div>
+<div class="ta-header-item">
+<label>Month:</label>
+<input id="taMonth" placeholder="Month Year" type="text"/>
+</div>
+<div class="ta-header-item">
+<label>Basic Pay (Rs.):</label>
+<input id="taBasicPay" placeholder="18,000" type="text"/>
+</div>
+<div class="ta-header-item">
+<label>Emp No:</label>
+<input id="taEmpNo" placeholder="" type="text"/>
+</div>
+<div class="ta-header-item">
+<label>D.O.A:</label>
+<input id="taDOA" placeholder="DD/MM/YYYY" type="text"/>
+</div>
+</div>
+</div>
+<div class="ta-table-container">
+<table id="taTable">
+<thead>
+<tr>
+<th style="width: 8%;">Date (From HQ to Dist)</th>
+<th style="width: 8%;">Date (Dist to HQ)</th>
+<th style="width: 5%;">Onward Train No.</th>
+<th style="width: 5%;">Return Train No.</th>
+<th style="width: 5%;">Dept Time (HQ)</th>
+<th style="width: 5%;">Arr Time (Dest)</th>
+<th style="width: 5%;">From</th>
+<th style="width: 5%;">To</th>
+<th style="width: 5%;">Return Dept</th>
+<th style="width: 5%;">Return Arr (HQ)</th>
+<th style="width: 20%;">Object of journey</th>
+<th style="width: 4%;">Hours</th>
+<th style="width: 4%;">Rate</th>
+<th style="width: 4%;">%</th>
+<th style="width: 6%;">Amount Rs.</th>
+</tr>
+</thead>
+<tbody id="taTableBody">
+</tbody>
+</table>
+</div>
+<div style="margin-top: 8px;">
+<button class="small-btn" id="addTaRow" type="button">Add Row</button>
+</div>
+<div style="margin-top: 10px; border: 1px solid #ccc; padding: 8px; background: #f9f9f9;">
+<div style="font-weight: bold; margin-bottom: 4px; font-size: 11px;">Percentage Summary</div>
+<div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr 1fr; gap: 6px; text-align: center;">
+<div>
+<div style="font-size: 9px; color: #666;">30% Count</div>
+<div id="count30" style="font-weight: bold; font-size: 13px;">0</div>
+</div>
+<div>
+<div style="font-size: 9px; color: #666;">70% Count</div>
+<div id="count70" style="font-weight: bold; font-size: 13px;">0</div>
+</div>
+<div>
+<div style="font-size: 9px; color: #666;">100% Count</div>
+<div id="count100" style="font-weight: bold; font-size: 13px;">0</div>
+</div>
+<div>
+  <div style="font-size: 9px; color: #666;">Total Days</div>
+  <div id="totalDays" style="font-weight: bold; font-size: 13px;">0</div>
+</div>
+<div>
+<div style="font-size: 9px; color: #666;">Total Amount</div>
+<div id="totalAmount" style="font-weight: bold; font-size: 13px; color: #4f46e5;">₹0</div>
+</div>
+</div>
+</div>
+
+<!-- Declaration Section -->
+<div class="ta-declaration">
+<div class="ta-declaration-title">Declaration</div>
+<ol class="ta-declaration-list">
+<li>The T.A. claimed by me has not been claimed before and will not be claimed in future.</li>
+<li>That the time of departure of the train as recorded herein is as actual time when the train started.</li>
+<li>No T.A., D.A. or any other remuneration has been drawn from any other source in respect of the Journey performed on duty free and also forhaltor which T.A., D.A. has been claimed in this bill.</li>
+<li>Adsact No.</li>
+<li>Conveyance charges claimed have actually been spent by me and are according to local municipal rates.</li>
+</ol>
+</div>
+
+<div style="margin-top: 10px; border: 1px solid #ccc; padding: 8px; background: #f9f9f9;">
+<div style="font-weight: bold; margin-bottom: 4px; font-size: 11px;">Approval &amp; Signature</div>
+<div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;">
+<div>
+<label style="font-size: 9px; color: #666;">Controlling Officer</label>
+<input id="taControllingOfficer" placeholder="Name of Controlling Officer" style="width: 100%; padding: 5px; border: 1px solid #ccc; border-radius: 4px; font-size: 10px;" type="text"/>
+</div>
+<div>
+<label style="font-size: 9px; color: #666;">Head Office</label>
+<input id="taHeadOffice" placeholder="Head Office" style="width: 100%; padding: 5px; border: 1px solid #ccc; border-radius: 4px; font-size: 10px;" type="text"/>
+</div>
+<div>
+<label style="font-size: 9px; color: #666;">Signature</label>
+<input id="taSignature" placeholder="Signature" style="width: 100%; padding: 5px; border: 1px solid #ccc; border-radius: 4px; font-size: 10px;" type="text"/>
+</div>
+</div>
+</div>
+
+<!-- Certificate Note -->
+<div class="ta-certificate-note">
+This certificate is only required when claim is made for the cost of locomotion whether it the farm of Railway fare or road mallage.
+</div>
+
+<div style="display: flex; gap: 6px; justify-content: flex-end; margin-top: 10px; flex-wrap: wrap;">
+<button id="closeTaModal" style="background: #94a3b8; padding: 7px 10px;">Cancel</button>
+<button id="printTaForm" style="background: var(--accent-gradient); padding: 7px 10px;">Print Form</button>
+<button id="saveTaForm" style="background: var(--success-gradient); padding: 7px 10px;">Save &amp; Download</button>
+</div>
+</div>
+</div>
+<div class="modal-backdrop" id="nightModalBackdrop">
+<div aria-modal="true" class="modal" role="dialog" style="max-width: 95%;">
+<h3 id="nightFormTitle" style="margin-bottom: 10px; font-size: 15px;">Night Duty Allowance Form</h3>
+<div class="night-form-header">
+<div class="night-header-title">
+<div id="nightRailwayZone" style="font-size: 9px; font-weight: bold;">RAILWAY ZONE</div>
+<div style="font-size: 7.5px;">Night Duty Allowance</div>
+</div>
+<div class="night-header-grid">
+<div class="night-header-item">
+<label>Name:</label>
+<input id="nightEmployeeName" placeholder="Full Name" type="text"/>
+</div>
+<div class="night-header-item">
+<label>S/O:</label>
+<input id="nightSono" placeholder="Father's Name" type="text"/>
+</div>
+<div class="night-header-item">
+<label>Designation:</label>
+<input id="nightDesignation" placeholder="T.M.TX" type="text"/>
+</div>
+<div class="night-header-item">
+<label>Employment No.:</label>
+<input id="nightEmpNo" placeholder="Emp No." type="text"/>
+</div>
+<div class="night-header-item">
+<label>Station:</label>
+<input id="nightStation" placeholder="Station" type="text"/>
+</div>
+<div class="night-header-item">
+<label>Basic Pay (Rs.):</label>
+<input id="nightBasicPay" placeholder="18000" type="text"/>
+</div>
+<div class="night-header-item">
+<label>DA (Rs.):</label>
+<input id="nightDA" placeholder="9000" type="text"/>
+</div>
+<div class="night-header-item">
+<label>Month:</label>
+<input id="nightMonth" placeholder="Month Year" type="text"/>
+</div>
+<div class="night-header-item">
+<label>From:</label>
+<input id="nightFromDate" placeholder="DD/MM/YYYY" type="text"/>
+</div>
+<div class="night-header-item">
+<label>To:</label>
+<input id="nightToDate" placeholder="DD/MM/YYYY" type="text"/>
+</div>
+<!-- New line added below From and To dates -->
+<div class="night-header-item" style="grid-column: 1 / span 2;">
+<label>Classification C. or intensive Reference to pay bill in which charged:</label>
+<input id="nightClassification" placeholder="Classification C. or intensive Reference to pay bill in which charged" type="text"/>
+</div>
+</div>
+</div>
+<div class="night-table-container">
+<table id="nightTable">
+<thead>
+<tr>
+<th style="width: 7%;">Date</th>
+<th style="width: 6%;">Night Shift<br/>From</th>
+<th style="width: 6%;">Night Shift<br/>To</th>
+<th style="width: 6%;">Night Duty<br/>From (22-06)</th>
+<th style="width: 6%;">Night Duty<br/>To (22-06)</th>
+<th style="width: 6%;">Total<br/>Hours</th>
+<th style="width: 8%;">Weighted Minutes<br/>(1 hour = 10 mins)</th>
+<th style="width: 25%;">Object of Night Duty</th>
+<th style="width: 6%;">Amount<br/>Payable</th>
+<th style="width: 5%;">Authority Rly. Board<br/>Letter No. pc60/Hw/of 7-7-62</th>
+</tr>
+</thead>
+<tbody id="nightTableBody">
+</tbody>
+</table>
+</div>
+<div style="margin-top: 8px;">
+<button class="small-btn" id="addNightRow" type="button">Add Row</button>
+</div>
+<div style="margin-top: 10px; border: 1px solid #ccc; padding: 8px; background: #f9f9f9;">
+<div style="font-weight: bold; margin-bottom: 4px; font-size: 11px;">Summary</div>
+<div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 8px; text-align: center;">
+<div>
+<div style="font-size: 9px; color: #666;">Total Nights</div>
+<div id="totalNights" style="font-weight: bold; font-size: 13px;">0</div>
+</div>
+<div>
+<div style="font-size: 9px; color: #666;">Total Hours</div>
+<div id="totalNightHours" style="font-weight: bold; font-size: 13px;">0</div>
+</div>
+<div>
+<div style="font-size: 9px; color: #666;">Total (1h=10m)</div>
+<div id="totalWeightedMinutes" style="font-weight: bold; font-size: 13px;">0</div>
+</div>
+<div>
+<div style="font-size: 9px; color: #666;">Total Amount</div>
+<div id="totalNightAmount" style="font-weight: bold; font-size: 13px; color: #4f46e5;">.......…..</div>
+</div>
+</div>
+</div>
+<div class="night-footer">
+<div class="night-footer-title">Verification &amp; Signature</div>
+<div class="night-signature-grid">
+<div class="night-signature-item">
+<div class="night-signature-label">Signature of Subordinate incharge</div>
+<div class="night-signature-line"></div>
+</div>
+<div class="night-signature-item">
+<div class="night-signature-label">Signature of Claimant</div>
+<div class="night-signature-line"></div>
+</div>
+</div>
+<div class="night-footer-note">
+Verified &amp; Certified that the entries have been made the No, D.A. Register the year Claimant has actually performed Night duty
+</div>
+</div>
+<div style="display: flex; gap: 6px; justify-content: flex-end; margin-top: 10px; flex-wrap: wrap;">
+<button id="closeNightModal" style="background: #94a3b8; padding: 7px 10px;">Cancel</button>
+<button id="printNightForm" style="background: var(--accent-gradient); padding: 7px 10px;">Print Form</button>
+<button id="saveNightForm" style="background: var(--success-gradient); padding: 7px 10px;">Save &amp; Download</button>
+</div>
+</div>
+</div>
+<div class="modal-backdrop" id="reportModalBackdrop">
+<div aria-modal="true" class="modal" role="dialog" style="max-width: 95%;">
+<h3>Generate Report</h3>
+<div class="report-type-selector">
+<div class="report-type active" data-type="monthly">Monthly Report</div>
+<div class="report-type" data-type="yearly">Yearly Report</div>
+<div class="report-type" data-type="custom">Custom Report</div>
+</div>
+<div class="report-dates active" id="monthlyReportDates">
+<div class="form-row">
+<div style="flex:1">
+<label>Select Month</label>
+<input id="reportMonth" style="width: 100%;" type="month"/>
+</div>
+</div>
+</div>
+<div class="report-dates" id="yearlyReportDates">
+<div class="form-row">
+<div style="flex:1">
+<label>Select Year</label>
+<select id="reportYear" style="width: 100%;">
+<option value="2023">2023</option>
+<option selected="" value="2024">2024</option>
+<option value="2025">2025</option>
+<option value="2026">2026</option>
+</select>
+</div>
+</div>
+</div>
+<div class="report-dates" id="customReportDates">
+<div class="form-row">
+<div style="flex:1">
+<label>From Date</label>
+<input id="reportFromDate" style="width: 100%;" type="date"/>
+</div>
+<div style="flex:1">
+<label>To Date</label>
+<input id="reportToDate" style="width: 100%;" type="date"/>
+</div>
+</div>
+</div>
+<div style="margin-top: 15px;">
+<button id="generateReportBtn" style="width: 100%;">Generate Report</button>
+</div>
+<div id="reportResults" style="margin-top: 15px; display: none;">
+<h4>Report Summary</h4>
+<div id="reportSummary" style="margin-bottom: 15px;"></div>
+<h4>Detailed Report</h4>
+<div style="overflow-x: auto;">
+<table class="report-table" id="reportTable">
+<thead>
+<tr>
+<th>Date</th>
+<th>Status</th>
+<th>Time On</th>
+<th>Time Off</th>
+<th>Duration</th>
+<th>Shift</th>
+<th>TA</th>
+<th>Night Duty</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody id="reportTableBody">
+</tbody>
+</table>
+</div>
+<div style="display: flex; gap: 6px; justify-content: flex-end; margin-top: 15px; flex-wrap: wrap;">
+<button class="small-btn" id="printReportBtn">Print Report</button>
+<button class="small-btn" id="exportReportCsv">Export CSV</button>
+<button id="closeReportModal" style="background:#94a3b8">Close</button>
+</div>
+</div>
+</div>
+</div>
+<div class="modal-backdrop" id="userGuideModalBackdrop">
+<div aria-modal="true" class="modal" role="dialog" style="max-width: 95%;">
+<h3>User Guide</h3>
+<div class="user-guide-content">
+<div class="user-guide-section">
+<h3>Introduction</h3>
+<p>Welcome to the Smart Duty Attendance App! This application helps you track your duty attendance, manage travelling allowances (TA), and calculate night duty allowances.</p>
+</div>
+<div class="user-guide-section">
+<h3>Getting Started</h3>
+<ol>
+<li>First, set up your profile by clicking the "Setup Profile" button in the menu</li>
+<li>Fill in your personal details, employment information, and salary details</li>
+<li>Start marking your daily attendance by clicking on calendar dates</li>
+</ol>
+</div>
+<div class="user-guide-section">
+<h3>Attendance Status Options</h3>
+<ul>
+<li><strong>Present</strong>: Mark when you are on duty</li>
+<li><strong>Absent</strong>: Mark when you are not on duty without authorization</li>
+<li><strong>Leave</strong>: Mark when you are on authorized leave</li>
+<li><strong>Rest</strong>: Mark your rest days</li>
+<li><strong>Holiday</strong>: Mark official holidays</li>
+</ul>
+</div>
+<div class="user-guide-section">
+<h3>Travelling Allowance (TA)</h3>
+<p>When marking a day as "Present", you can enable TA if you travelled for duty.</p>
+<div class="formula-box">
+<strong>TA Calculation Formula:</strong><br/>
+TA Amount = (TA Rate × Percentage) / 100<br/><br/>
+<strong>Percentage based on duty hours:</strong><br/>
+• Less than 8 hours: 30%<br/>
+• 8-12 hours: 70%<br/>
+• More than 12 hours: 100%
+</div>
+</div>
+<div class="user-guide-section">
+<h3>Night Duty Allowance</h3>
+<p>When marking a day as "Present", you can enable Night Duty if you performed duties during night hours (10 PM to 6 AM).</p>
+<div class="formula-box">
+<strong>Night Duty Calculation Formula:</strong><br/>
+Rate per 60 minutes = (Basic Pay + DA) / 200<br/>
+Amount = (Rate per 60 minutes / 60) × Total Weighted Minutes<br/><br/>
+<strong>Weighted Minutes:</strong><br/>
+1 hour of night duty = 10 minutes of weighted time
+</div>
+</div>
+<div class="user-guide-section">
+<h3>Report Generation</h3>
+<p>You can generate three types of reports:</p>
+<ul>
+<li><strong>Monthly Report</strong>: Shows attendance for a specific month</li>
+<li><strong>Yearly Report</strong>: Shows attendance summary for a full year</li>
+<li><strong>Custom Report</strong>: Shows attendance for any custom date range</li>
+</ul>
+</div>
+<div class="user-guide-section">
+<h3>Export Options</h3>
+<ul>
+<li><strong>CSV Export</strong>: Export your data as a CSV file for further analysis</li>
+<li><strong>PDF Export</strong>: Export your data as a PDF document</li>
+<li><strong>Print</strong>: Print your attendance records directly</li>
+</ul>
+</div>
+<div class="user-guide-section">
+<h3>Tips</h3>
+<ul>
+<li>Long-press on a date to quickly mark it as present</li>
+<li>Use the "Mark Today Present" button for quick entry</li>
+<li>Set up shift presets for faster data entry</li>
+<li>Regularly export your data for backup</li>
+</ul>
+</div>
+</div>
+<div style="display: flex; gap: 6px; justify-content: flex-end; margin-top: 15px; flex-wrap: wrap;">
+<button id="closeUserGuideModal" style="background:#94a3b8">Close</button>
+</div>
+</div>
+</div>
+<div class="modal-backdrop" id="resetModalBackdrop">
+<div aria-modal="true" class="modal" role="dialog" style="max-width: 95%;">
+<h3>Reset Options</h3>
+<div style="margin-top: 15px;">
+<div class="card">
+<h4>Calendar Reset</h4>
+<p class="small" style="margin-bottom: 10px;">Reset calendar data for specific periods</p>
+<div style="display: flex; gap: 8px; flex-wrap: wrap;">
+<button id="resetCurrentMonth" style="background: var(--danger-gradient);">Reset Current Month</button>
+<button id="resetCurrentYear" style="background: var(--danger-gradient);">Reset Current Year</button>
+</div>
+</div>
+<div class="card">
+<h4>Settings Reset</h4>
+<p class="small" style="margin-bottom: 10px;">Reset all app settings to defaults</p>
+<button id="resetSettings" style="background: var(--danger-gradient); width: 100%;">Reset Settings</button>
+</div>
+<div class="card">
+<h4>Profile Reset</h4>
+<p class="small" style="margin-bottom: 10px;">Reset your profile information</p>
+<button id="resetProfile" style="background: var(--danger-gradient); width: 100%;">Reset Profile</button>
+</div>
+<div class="card">
+<h4>Factory Reset</h4>
+<p class="small" style="margin-bottom: 10px;">Reset everything - All data will be lost!</p>
+<button id="factoryReset" style="background: var(--danger-gradient); width: 100%;">Factory Reset</button>
+</div>
+</div>
+<div style="display: flex; gap: 6px; justify-content: flex-end; margin-top: 15px; flex-wrap: wrap;">
+<button id="closeResetModal" style="background:#94a3b8">Cancel</button>
+</div>
+</div>
+</div>
+<!-- Salary Calculator Modal -->
+<div class="modal-backdrop" id="salaryCalculatorModalBackdrop">
+<div aria-modal="true" class="modal" role="dialog" style="max-width: 95%;">
+<h3>Salary Calculator</h3>
+<div class="card">
+<div class="form-row">
+<div style="flex:1">
+<label>Basic Pay (Rs.)</label>
+<input id="salaryBasicPay" placeholder="18000" style="width: 100%;" type="number"/>
+</div>
+<div style="flex:1">
+<label>DA Percentage (%)</label>
+<input id="salaryDAPercentage" placeholder="50" style="width: 100%;" type="number"/>
+</div>
+</div>
+<div class="form-row">
+<div style="flex:1">
+<label>HRA Percentage (%)</label>
+<input id="salaryHRAPercentage" placeholder="10" style="width: 100%;" type="number"/>
+</div>
+<div style="flex:1">
+<label>Other Allowances (Rs.)</label>
+<input id="salaryOtherAllowances" placeholder="0" style="width: 100%;" type="number"/>
+</div>
+</div>
+<div class="form-row">
+<div style="flex:1">
+<label>PF Percentage (%)</label>
+<input id="salaryPFPercentage" placeholder="12" style="width: 100%;" type="number"/>
+</div>
+<div style="flex:1">
+<label>Tax Deduction (Rs.)</label>
+<input id="salaryTaxDeduction" placeholder="0" style="width: 100%;" type="number"/>
+</div>
+</div>
+<div style="margin-top: 15px;">
+<button id="calculateSalary" style="width: 100%; background: var(--success-gradient);">Calculate Salary</button>
+</div>
+</div>
+<div id="salaryResults" style="display: none;">
+<div class="salary-section">
+<div class="salary-section-title">Earnings</div>
+<div class="salary-breakdown">
+<div class="salary-item">
+<span>Basic Pay:</span>
+<span id="salaryBasicPayResult">₹0</span>
+</div>
+<div class="salary-item">
+<span>Dearness Allowance (DA):</span>
+<span id="salaryDAResult">₹0</span>
+</div>
+<div class="salary-item">
+<span>House Rent Allowance (HRA):</span>
+<span id="salaryHRAResult">₹0</span>
+</div>
+<div class="salary-item">
+<span>Other Allowances:</span>
+<span id="salaryOtherAllowancesResult">₹0</span>
+</div>
+<div class="salary-item salary-total">
+<span>Gross Salary:</span>
+<span id="salaryGrossResult">₹0</span>
+</div>
+</div>
+</div>
+<div class="salary-section">
+<div class="salary-section-title">Deductions</div>
+<div class="salary-breakdown">
+<div class="salary-item">
+<span>Provident Fund (PF):</span>
+<span id="salaryPFResult">₹0</span>
+</div>
+<div class="salary-item">
+<span>Tax Deduction:</span>
+<span id="salaryTaxResult">₹0</span>
+</div>
+<div class="salary-item salary-total">
+<span>Total Deductions:</span>
+<span id="salaryTotalDeductions">₹0</span>
+</div>
+</div>
+</div>
+<div class="salary-section">
+<div class="salary-breakdown">
+<div class="salary-item salary-total">
+<span>Net Salary:</span>
+<span id="salaryNetResult">₹0</span>
+</div>
+</div>
+</div>
+</div>
+<div style="display: flex; gap: 6px; justify-content: flex-end; margin-top: 15px; flex-wrap: wrap;">
+<button id="closeSalaryCalculator" style="background:#94a3b8">Close</button>
+<button id="printSalary" style="background: var(--accent-gradient);">Print</button>
+</div>
+</div>
+</div>
+</div>
+
+<script>
+console.log("Initializing Smart Duty Attendance App...");
+
+// Authentication System
+const authContainer = document.getElementById('authContainer');
+const appContainer = document.getElementById('appContainer');
+const loginTab = document.getElementById('loginTab');
+const registerTab = document.getElementById('registerTab');
+const loginForm = document.getElementById('loginForm');
+const registerForm = document.getElementById('registerForm');
+const switchToRegister = document.getElementById('switchToRegister');
+const switchToLogin = document.getElementById('switchToLogin');
+const logoutBtn = document.getElementById('logoutBtn');
+
+// User management functions
+function getUsers() {
+  return JSON.parse(localStorage.getItem('attendance_users')) || [];
+}
+
+function saveUsers(users) {
+  localStorage.setItem('attendance_users', JSON.stringify(users));
+}
+
+function getCurrentUser() {
+  return JSON.parse(localStorage.getItem('current_user'));
+}
+
+function setCurrentUser(user) {
+  localStorage.setItem('current_user', JSON.stringify(user));
+}
+
+function clearCurrentUser() {
+  localStorage.removeItem('current_user');
+}
+
+// Switch between login and register forms
+loginTab.addEventListener('click', () => {
+  loginTab.classList.add('active');
+  registerTab.classList.remove('active');
+  loginForm.classList.add('active');
+  registerForm.classList.remove('active');
+});
+
+registerTab.addEventListener('click', () => {
+  registerTab.classList.add('active');
+  loginTab.classList.remove('active');
+  registerForm.classList.add('active');
+  loginForm.classList.remove('active');
+});
+
+switchToRegister.addEventListener('click', () => {
+  registerTab.click();
+});
+
+switchToLogin.addEventListener('click', () => {
+  loginTab.click();
+});
+
+// Handle registration
+registerForm.addEventListener('submit', (e) => {
+  e.preventDefault();
+  
+  const name = document.getElementById('registerName').value.trim();
+  const email = document.getElementById('registerEmail').value.trim();
+  const mobile = document.getElementById('registerMobile').value.trim();
+  const password = document.getElementById('registerPassword').value;
+  
+  if (!name || !email || !mobile || !password) {
+    alert('Please fill in all required fields');
+    return;
+  }
+  
+  // Validate email format
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    alert('Please enter a valid email address');
+    return;
+  }
+  
+  // Validate mobile format (basic validation)
+  const mobileRegex = /^[0-9]{10}$/;
+  if (!mobileRegex.test(mobile)) {
+    alert('Please enter a valid 10-digit mobile number');
+    return;
+  }
+  
+  const users = getUsers();
+  
+  // Check if email or mobile already exists
+  const existingUser = users.find(u => u.email === email || u.mobile === mobile);
+  if (existingUser) {
+    alert('An account with this email or mobile number already exists');
+    return;
+  }
+  
+  // Create new user
+  const newUser = {
+    id: Date.now().toString(),
+    name,
+    email,
+    mobile,
+    password, // In a real app, this should be hashed
+    createdAt: new Date().toISOString()
+  };
+  
+  users.push(newUser);
+  saveUsers(users);
+  
+  // Auto-login after registration
+  setCurrentUser(newUser);
+  showApp();
+  
+  alert('Registration successful! You can now set up your profile.');
+});
+
+// Handle login
+loginForm.addEventListener('submit', (e) => {
+  e.preventDefault();
+  
+  const emailOrMobile = document.getElementById('loginEmail').value.trim();
+  const password = document.getElementById('loginPassword').value;
+  
+  if (!emailOrMobile || !password) {
+    alert('Please fill in all fields');
+    return;
+  }
+  
+  const users = getUsers();
+  
+  // Find user by email or mobile
+  const user = users.find(u => 
+    (u.email === emailOrMobile || u.mobile === emailOrMobile) && 
+    u.password === password
+  );
+  
+  if (!user) {
+    alert('Invalid email/mobile or password');
+    return;
+  }
+  
+  setCurrentUser(user);
+  showApp();
+  
+  alert('Login successful!');
+});
+
+// Handle logout
+logoutBtn.addEventListener('click', () => {
+  if (confirm('Are you sure you want to logout?')) {
+    clearCurrentUser();
+    showAuth();
+  }
+});
+
+// Show auth screen
+function showAuth() {
+  authContainer.style.display = 'flex';
+  appContainer.style.display = 'none';
+  loginForm.reset();
+  registerForm.reset();
+  loginTab.click();
+}
+
+// Show app screen
+function showApp() {
+  authContainer.style.display = 'none';
+  appContainer.style.display = 'block';
+  
+  // Initialize the app with current user data
+  const currentUser = getCurrentUser();
+  if (currentUser) {
+    // Set user info in profile if not already set
+    const profile = JSON.parse(localStorage.getItem('ta_profile')) || {};
+    if (!profile.employeeName) {
+      profile.employeeName = currentUser.name;
+      localStorage.setItem('ta_profile', JSON.stringify(profile));
+    }
+    
+    // Update sidebar with user info
+    document.getElementById('sidebarProfileName').textContent = currentUser.name;
+  }
+  
+  proceedWithApp();
+}
+
+// Check if user is logged in on page load
+function checkAuthStatus() {
+  const currentUser = getCurrentUser();
+  if (currentUser) {
+    showApp();
+  } else {
+    showAuth();
+  }
+}
+
+// Rest of your existing JavaScript code follows...
+// (All the original JavaScript code from your file goes here, but I'm including just the essential parts for brevity)
+
+const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const monthPicker = document.getElementById('monthPicker');
+const yearSelect = document.getElementById('yearSelect');
+yearSelect.innerHTML = '';
+for (let y = 2025; y <= 2060; y++) {
+const opt = document.createElement('option');
+opt.value = y;
+opt.textContent = y;
+if (y === new Date().getFullYear()) opt.selected = true;
+yearSelect.appendChild(opt);
+}
+const monthSelect = document.getElementById('monthSelect');
+const calendarEl = document.getElementById('calendar');
+const monthLabel = document.getElementById('monthLabel');
+const monthRange = document.getElementById('monthRange');
+const sumPresent = document.getElementById('sumPresent');
+const sumAbsent = document.getElementById('sumAbsent');
+const sumLeave = document.getElementById('sumLeave');
+const sumRest = document.getElementById('sumRest');
+const sumHoliday = document.getElementById('sumHoliday');
+const statDays = document.getElementById('statDays');
+const statHours = document.getElementById('statHours');
+const statPresent = document.getElementById('statPresent');
+const statLeave = document.getElementById('statLeave');
+const statRest = document.getElementById('statRest');
+const statHoliday = document.getElementById('statHoliday');
+const modal = document.getElementById('modalBackdrop');
+const statusSelect = document.getElementById('statusSelect');
+const timeOn = document.getElementById('timeOn');
+const timeOff = document.getElementById('timeOff');
+const shiftSelect = document.getElementById('shiftSelect');
+const durationInput = document.getElementById('duration');
+const taApplicable = document.getElementById('taApplicable');
+const taFields = document.getElementById('taFields');
+const taFrom = document.getElementById('taFrom');
+const taTo = document.getElementById('taTo');
+const taDepartureTime = document.getElementById('taDepartureTime');
+const taArrivalTime = document.getElementById('taArrivalTime');
+const taReturnDepartureTime = document.getElementById('taReturnDepartureTime');
+const taReturnArrivalTime = document.getElementById('taReturnArrivalTime');
+const taObject = document.getElementById('taObject');
+const notes = document.getElementById('notes');
+const presentFields = document.getElementById('presentFields');
+const leaveTypeFields = document.getElementById('leaveTypeFields');
+const leaveTypeSelect = document.getElementById('leaveTypeSelect');
+const taTravelMode = document.getElementById('taTravelMode');
+const taOnwardTrainNo = document.getElementById('taOnwardTrainNo');
+const taReturnTrainNo = document.getElementById('taReturnTrainNo');
+const trainNoContainer = document.getElementById('trainNoContainer');
+const nightDutyApplicable = document.getElementById('nightDutyApplicable');
+const nightDutyFields = document.getElementById('nightDutyFields');
+const nightShiftFrom = document.getElementById('nightShiftFrom');
+const nightShiftTo = document.getElementById('nightShiftTo');
+const nightDutyFrom = document.getElementById('nightDutyFrom');
+const nightDutyTo = document.getElementById('nightDutyTo');
+const nightDutyHours = document.getElementById('nightDutyHours');
+const nightWeightedHours = document.getElementById('nightWeightedHours');
+const nightDutyObject = document.getElementById('nightDutyObject');
+const saveBtn = document.getElementById('saveEntry');
+const closeBtn = document.getElementById('closeModal');
+const deleteBtn = document.getElementById('deleteEntry');
+const exportCsvBtn = document.getElementById('exportCsv');
+const exportPdfBtn = document.getElementById('exportPdf');
+const printBtn = document.getElementById('printReport');
+const generateReportBtn = document.getElementById('generateReport');
+const shiftPreset = document.getElementById('shiftPreset');
+const menuToggle = document.getElementById('menuToggle');
+const calendarView = document.getElementById('calendarView');
+const sidebarMenu = document.getElementById('sidebarMenu');
+const profileModal = document.getElementById('profileModalBackdrop');
+const setupProfileBtn = document.getElementById('setupProfile');
+const closeProfileModalBtn = document.getElementById('closeProfileModal');
+const saveProfileBtn = document.getElementById('saveProfile');
+const profileBasicPay = document.getElementById('profileBasicPay');
+const profileDAPercentage = document.getElementById('profileDAPercentage');
+const profileDAAmount = document.getElementById('profileDAAmount');
+const taModal = document.getElementById('taModalBackdrop');
+const openTaFormBtn = document.getElementById('openTaForm');
+const closeTaModalBtn = document.getElementById('closeTaModal');
+const addTaRowBtn = document.getElementById('addTaRow');
+const printTaFormBtn = document.getElementById('printTaForm');
+const saveTaFormBtn = document.getElementById('saveTaForm');
+const taTableBody = document.getElementById('taTableBody');
+const nightModal = document.getElementById('nightModalBackdrop');
+const openNightFormBtn = document.getElementById('openNightForm');
+const closeNightModalBtn = document.getElementById('closeNightModal');
+const addNightRowBtn = document.getElementById('addNightRow');
+const printNightFormBtn = document.getElementById('printNightForm');
+const saveNightFormBtn = document.getElementById('saveNightForm');
+const nightTableBody = document.getElementById('nightTableBody');
+const nightBasicPay = document.getElementById('nightBasicPay');
+const nightDA = document.getElementById('nightDA');
+const profileRailwayZone = document.getElementById('profileRailwayZone');
+const taRailwayZone = document.getElementById('taRailwayZone');
+const nightRailwayZone = document.getElementById('nightRailwayZone');
+const taFormTitle = document.getElementById('taFormTitle');
+const nightFormTitle = document.getElementById('nightFormTitle');
+const quickMarkPresentBtn = document.getElementById('quickMarkPresent');
+const notificationBell = document.getElementById('notificationBell');
+const notificationBadge = document.getElementById('notificationBadge');
+const profilePhotoContainer = document.getElementById('profilePhotoContainer');
+const profilePhotoPreviewContainer = document.getElementById('profilePhotoPreviewContainer');
+const profilePhotoUpload = document.getElementById('profilePhotoUpload');
+const uploadPhotoBtn = document.getElementById('uploadPhotoBtn');
+const reportModal = document.getElementById('reportModalBackdrop');
+const closeReportModalBtn = document.getElementById('closeReportModal');
+const generateReportBtnMain = document.getElementById('generateReportBtn');
+const printReportBtn = document.getElementById('printReportBtn');
+const exportReportCsvBtn = document.getElementById('exportReportCsv');
+const reportResults = document.getElementById('reportResults');
+const reportSummary = document.getElementById('reportSummary');
+const reportTableBody = document.getElementById('reportTableBody');
+const userGuideModal = document.getElementById('userGuideModalBackdrop');
+const openUserGuideBtn = document.getElementById('openUserGuide');
+const closeUserGuideModalBtn = document.getElementById('closeUserGuideModal');
+const resetModal = document.getElementById('resetModalBackdrop');
+const openResetOptionsBtn = document.getElementById('openResetOptions');
+const closeResetModalBtn = document.getElementById('closeResetModal');
+const resetCurrentMonthBtn = document.getElementById('resetCurrentMonth');
+const resetCurrentYearBtn = document.getElementById('resetCurrentYear');
+const resetSettingsBtn = document.getElementById('resetSettings');
+const resetProfileBtn = document.getElementById('resetProfile');
+const factoryResetBtn = document.getElementById('factoryReset');
+const prevMonthBtn = document.getElementById('prevMonth');
+const nextMonthBtn = document.getElementById('nextMonth');
+
+// Salary Calculator Elements
+const salaryCalculatorModal = document.getElementById('salaryCalculatorModalBackdrop');
+const openSalaryCalculatorBtn = document.getElementById('openSalaryCalculator');
+const closeSalaryCalculatorBtn = document.getElementById('closeSalaryCalculator');
+const calculateSalaryBtn = document.getElementById('calculateSalary');
+const printSalaryBtn = document.getElementById('printSalary');
+const salaryResults = document.getElementById('salaryResults');
+
+// New variables for sector selection
+const sectorRadios = document.querySelectorAll('input[name="sector"]');
+const governmentSectorDetails = document.getElementById('governmentSectorDetails');
+const privateSectorDetails = document.getElementById('privateSectorDetails');
+const governmentType = document.getElementById('governmentType');
+const governmentDepartment = document.getElementById('governmentDepartment');
+const companyName = document.getElementById('companyName');
+const industry = document.getElementById('industry');
+const railwayZoneSection = document.getElementById('railwayZoneSection');
+const taRateSection = document.getElementById('taRateSection');
+
+// New variable for night classification
+const nightClassification = document.getElementById('nightClassification');
+
+// Rest Tracking Modal Elements
+const restTrackingModal = document.getElementById('restTrackingModalBackdrop');
+const closeRestTrackingModalBtn = document.getElementById('closeRestTrackingModal');
+const restSummaryElement = document.getElementById('restSummaryElement');
+
+// New Status Tracking Modal Elements
+const presentTrackingModal = document.getElementById('presentTrackingModalBackdrop');
+const closePresentTrackingModalBtn = document.getElementById('closePresentTrackingModal');
+const presentSummaryElement = document.getElementById('presentSummaryElement');
+
+const absentTrackingModal = document.getElementById('absentTrackingModalBackdrop');
+const closeAbsentTrackingModalBtn = document.getElementById('closeAbsentTrackingModal');
+const absentSummaryElement = document.getElementById('absentSummaryElement');
+
+const leaveTrackingModal = document.getElementById('leaveTrackingModalBackdrop');
+const closeLeaveTrackingModalBtn = document.getElementById('closeLeaveTrackingModal');
+const leaveSummaryElement = document.getElementById('leaveSummaryElement');
+
+const holidayTrackingModal = document.getElementById('holidayTrackingModalBackdrop');
+const closeHolidayTrackingModalBtn = document.getElementById('closeHolidayTrackingModal');
+const holidaySummaryElement = document.getElementById('holidaySummaryElement');
+
+let state = { year: null, month: null, data: {} };
+let activeDateKey = null;
+let appUnlocked = false;
+
+// Initialize sector selection
+function initSectorSelection() {
+  sectorRadios.forEach(radio => {
+    radio.addEventListener('change', function() {
+      const sector = this.value;
+      
+      // Hide all sector details
+      governmentSectorDetails.classList.remove('active');
+      privateSectorDetails.classList.remove('active');
+      
+      // Show relevant sector details
+      if (sector === 'government') {
+        governmentSectorDetails.classList.add('active');
+      } else if (sector === 'private') {
+        privateSectorDetails.classList.add('active');
+      }
+      
+      // Reset railway specific fields
+      railwayZoneSection.style.display = 'none';
+      taRateSection.style.display = 'none';
+      
+      // Hide TA and Night form buttons if not railway
+      const openTaFormBtn = document.getElementById('openTaForm');
+      const openNightFormBtn = document.getElementById('openNightForm');
+      if (sector !== 'government' || governmentDepartment.value !== 'railway') {
+        openTaFormBtn.style.display = 'none';
+        openNightFormBtn.style.display = 'none';
+      } else {
+        openTaFormBtn.style.display = 'block';
+        openNightFormBtn.style.display = 'block';
+      }
+    });
+  });
+  
+  // Add listener for government department change
+  governmentDepartment.addEventListener('change', function() {
+    const isRailway = this.value === 'railway';
+    
+    // Show/hide railway specific fields
+    railwayZoneSection.style.display = isRailway ? 'block' : 'none';
+    taRateSection.style.display = isRailway ? 'block' : 'none';
+    
+    // Show/hide TA and Night form buttons
+    const openTaFormBtn = document.getElementById('openTaForm');
+    const openNightFormBtn = document.getElementById('openNightForm');
+    if (isRailway) {
+      openTaFormBtn.style.display = 'block';
+      openNightFormBtn.style.display = 'block';
+    } else {
+      openTaFormBtn.style.display = 'none';
+      openNightFormBtn.style.display = 'none';
+    }
+  });
+}
+
+// Month navigation functions
+prevMonthBtn.addEventListener('click', function() {
+  if (state.month === 1) {
+    state.month = 12;
+    state.year--;
+  } else {
+    state.month--;
+  }
+  yearSelect.value = state.year;
+  monthSelect.value = state.month;
+  loadMonthData();
+  renderCalendar();
+});
+
+nextMonthBtn.addEventListener('click', function() {
+  if (state.month === 12) {
+    state.month = 1;
+    state.year++;
+  } else {
+    state.month++;
+  }
+  yearSelect.value = state.year;
+  monthSelect.value = state.month;
+  loadMonthData();
+  renderCalendar();
+});
+
+menuToggle.addEventListener('click', toggleMenu);
+
+function toggleMenu() {
+if (calendarView.classList.contains('active')) {
+calendarView.classList.remove('active');
+calendarView.classList.add('hidden');
+sidebarMenu.classList.remove('hidden');
+sidebarMenu.classList.add('active');
+menuToggle.textContent = '← Back';
+updateAttendanceGraph();
+loadProfilePhoto();
+} else {
+calendarView.classList.remove('hidden');
+calendarView.classList.add('active');
+sidebarMenu.classList.remove('active');
+sidebarMenu.classList.add('hidden');
+menuToggle.textContent = '☰ Menu';
+}
+}
+
+function formatYMD(y, m, d) {
+return `${y.toString().padStart(4, '0')}-${(m).toString().padStart(2, '0')}-${d.toString().padStart(2, '0')}`;
+}
+
+function storageKey() {
+return `att_${state.year}-${String(state.month).padStart(2, '0')}`;
+}
+
+function loadMonthData() {
+try {
+const raw = localStorage.getItem(storageKey());
+state.data = raw ? JSON.parse(raw) : {};
+updateSummary();
+updateAttendanceGraph();
+} catch (e) {
+console.error("Error loading month data:", e);
+state.data = {};
+}
+}
+
+function saveMonthData() {
+try {
+localStorage.setItem(storageKey(), JSON.stringify(state.data));
+updateSummary();
+updateAttendanceGraph();
+} catch (e) {
+console.error("Error saving month data:", e);
+}
+}
+
+function updateAttendanceGraph() {
+let p = 0, a = 0, l = 0, r = 0, h = 0;
+for (const k in state.data) {
+const e = state.data[k];
+if (!e) continue;
+if (e.status === 'present') p++;
+if (e.status === 'absent') a++;
+if (e.status === 'leave') l++;
+if (e.status === 'rest') r++;
+if (e.status === 'holiday') h++;
+}
+
+const daysInMonth = new Date(state.year, state.month, 0).getDate();
+const maxDays = daysInMonth;
+
+const pPercent = Math.min(100, (p / maxDays) * 100);
+const aPercent = Math.min(100, (a / maxDays) * 100);
+const lPercent = Math.min(100, (l / maxDays) * 100);
+const rPercent = Math.min(100, (r / maxDays) * 100);
+const hPercent = Math.min(100, (h / maxDays) * 100);
+
+document.getElementById('graphPresent').style.height = `${pPercent}%`;
+document.getElementById('graphAbsent').style.height = `${aPercent}%`;
+document.getElementById('graphLeave').style.height = `${lPercent}%`;
+document.getElementById('graphRest').style.height = `${rPercent}%`;
+document.getElementById('graphHoliday').style.height = `${hPercent}%`;
+
+document.getElementById('graphPresentCount').textContent = p;
+document.getElementById('graphAbsentCount').textContent = a;
+document.getElementById('graphLeaveCount').textContent = l;
+document.getElementById('graphRestCount').textContent = r;
+document.getElementById('graphHolidayCount').textContent = h;
+}
+
+function renderCalendar() {
+console.log("Rendering calendar for:", state.year, state.month);
+calendarEl.innerHTML = '';
+
+const first = new Date(state.year, state.month - 1, 1);
+const daysInMonth = new Date(state.year, state.month, 0).getDate();
+
+monthLabel.textContent = first.toLocaleString(undefined, { month: 'long', year: 'numeric' });
+monthRange.textContent = `${state.year}-${String(state.month).padStart(2, '0')}`;
+
+updateHeaderPayRate();
+
+for (let i = 0; i < 7; i++) {
+const hd = document.createElement('div');
+hd.className = 'day-header';
+hd.textContent = DAYS[i];
+calendarEl.appendChild(hd);
+}
+
+for (let blank = 0; blank < first.getDay(); blank++) {
+const c = document.createElement('div');
+c.className = 'cell inactive';
+calendarEl.appendChild(c);
+}
+
+const today = new Date();
+const todayYMD = formatYMD(today.getFullYear(), today.getMonth() + 1, today.getDate());
+
+for (let d = 1; d <= daysInMonth; d++) {
+const ymd = formatYMD(state.year, state.month, d);
+const cell = document.createElement('div');
+cell.className = 'cell';
+
+if (ymd === todayYMD && state.year === today.getFullYear() && state.month === today.getMonth() + 1) {
+cell.classList.add('today');
+}
+
+const dateNum = document.createElement('div');
+dateNum.className = 'date-num';
+dateNum.textContent = d;
+cell.appendChild(dateNum);
+
+const entry = state.data[ymd];
+if (entry) {
+if (entry.status) {
+cell.classList.add(`status-${entry.status}`);
+}
+
+if (entry.taFrom || entry.taTo) {
+const taIndicator = document.createElement('div');
+taIndicator.className = 'ta-indicator';
+taIndicator.textContent = 'TA';
+cell.appendChild(taIndicator);
+}
+
+if (entry.nightDutyApplicable) {
+const nightIndicator = document.createElement('div');
+nightIndicator.className = 'night-indicator';
+nightIndicator.textContent = 'NIGHT';
+cell.appendChild(nightIndicator);
+}
+
+if (entry.status === 'leave' && entry.leaveType) {
+const leaveTypeIndicator = document.createElement('div');
+leaveTypeIndicator.className = 'leave-type-indicator';
+leaveTypeIndicator.textContent = entry.leaveType;
+cell.appendChild(leaveTypeIndicator);
+}
+
+const st = document.createElement('div');
+if (entry.status === 'present') {
+st.className = 'status s-present';
+} else if (entry.status === 'absent') {
+st.className = 'status s-absent';
+} else if (entry.status === 'leave') {
+st.className = 'status s-leave';
+} else if (entry.status === 'rest') {
+st.className = 'status s-rest';
+} else if (entry.status === 'holiday') {
+st.className = 'status s-holiday';
+}
+st.textContent = entry.status ? entry.status.toUpperCase() : '';
+cell.appendChild(st);
+}
+
+cell.addEventListener('click', () => openModal(ymd));
+
+let pressTimer;
+cell.addEventListener('pointerdown', (e) => {
+pressTimer = setTimeout(() => { quickTogglePresent(ymd); }, 600);
+});
+cell.addEventListener('pointerup', () => clearTimeout(pressTimer));
+cell.addEventListener('pointerleave', () => clearTimeout(pressTimer));
+
+calendarEl.appendChild(cell);
+}
+
+console.log("Calendar rendered successfully");
+checkTodayAttendance();
+}
+
+function openModal(ymd) {
+activeDateKey = ymd;
+const [y, m, d] = ymd.split('-');
+document.getElementById('modalDate').textContent = `${d}-${m}-${y}`;
+document.getElementById('modalDayName').textContent = new Date(Number(y), Number(m) - 1, Number(d)).toLocaleString(undefined, { weekday: 'long' });
+document.getElementById('modalTitle').textContent = `Details — ${ymd}`;
+
+const e = state.data[ymd] || {};
+statusSelect.value = e.status || '';
+
+if (e.status === 'present') {
+presentFields.style.display = 'block';
+timeOn.value = e.timeOn || '';
+timeOff.value = e.timeOff || '';
+shiftSelect.value = e.shift || '';
+durationInput.value = e.duration || '';
+
+taApplicable.checked = !!(e.taFrom || e.taTo);
+taFields.style.display = taApplicable.checked ? 'block' : 'none';
+
+taTravelMode.value = e.taTravelMode || 'train';
+if (taTravelMode.value === 'train') {
+trainNoContainer.style.display = 'block';
+taOnwardTrainNo.value = e.taOnwardTrainNo || '';
+taReturnTrainNo.value = e.taReturnTrainNo || '';
+} else {
+trainNoContainer.style.display = 'none';
+taOnwardTrainNo.value = 'By Road';
+taReturnTrainNo.value = 'By Road';
+}
+
+taFrom.value = e.taFrom || '';
+taTo.value = e.taTo || '';
+taDepartureTime.value = e.taDepartureTime || '';
+taArrivalTime.value = e.taArrivalTime || '';
+taReturnDepartureTime.value = e.taReturnDepartureTime || '';
+taReturnArrivalTime.value = e.taReturnArrivalTime || '';
+taObject.value = e.taObject || '';
+
+nightDutyApplicable.checked = !!e.nightDutyApplicable;
+nightDutyFields.style.display = nightDutyApplicable.checked ? 'block' : 'none';
+nightShiftFrom.value = e.nightShiftFrom || '22:00';
+nightShiftTo.value = e.nightShiftTo || '06:00';
+nightDutyFrom.value = e.nightDutyFrom || '22:00';
+nightDutyTo.value = e.nightDutyTo || '06:00';
+nightDutyHours.value = e.nightDutyHours || '';
+nightWeightedHours.value = e.nightWeightedHours || '';
+nightDutyObject.value = e.nightDutyObject || '';
+} else {
+presentFields.style.display = 'none';
+}
+
+if (e.status === 'leave') {
+leaveTypeFields.style.display = 'block';
+leaveTypeSelect.value = e.leaveType || '';
+} else {
+leaveTypeFields.style.display = 'none';
+}
+
+notes.value = e.notes || '';
+modal.style.display = 'flex';
+}
+
+function closeModal() {
+modal.style.display = 'none';
+activeDateKey = null;
+}
+
+function quickTogglePresent(ymd) {
+const cur = state.data[ymd] || {};
+if (cur.status === 'present') {
+delete state.data[ymd];
+} else {
+state.data[ymd] = { ...(cur || {}), status: 'present' };
+}
+saveMonthData();
+renderCalendar();
+}
+
+function calcDuration(tOn, tOff) {
+if (!tOn || !tOff) return '';
+const [h1, m1] = tOn.split(':').map(Number);
+const [h2, m2] = tOff.split(':').map(Number);
+
+let start = h1 * 60 + m1;
+let end = h2 * 60 + m2;
+if (end < start) end += 24 * 60;
+
+const mins = end - start;
+if (mins < 0) return '';
+const hrs = Math.floor(mins / 60);
+const rem = mins % 60;
+return `${hrs}h ${rem}m`;
+}
+
+function calculateNightHours(from, to) {
+if (!from || !to) return '';
+const [h1, m1] = from.split(':').map(Number);
+const [h2, m2] = to.split(':').map(Number);
+
+let start = h1 * 60 + m1;
+let end = h2 * 60 + m2;
+
+if (end < start) end += 24 * 60;
+
+const mins = end - start;
+if (mins < 0) return '';
+
+const hrs = Math.floor(mins / 60);
+const rem = mins % 60;
+return `${hrs}h ${rem}m`;
+}
+
+function calculateWeightedMinutes(from, to) {
+if (!from || !to) return '';
+const [h1, m1] = from.split(':').map(Number);
+const [h2, m2] = to.split(':').map(Number);
+
+let start = h1 * 60 + m1;
+let end = h2 * 60 + m2;
+
+if (end < start) end += 24 * 60;
+
+const totalMinutes = end - start;
+if (totalMinutes < 0) return '';
+
+const weightedMinutes = Math.floor(totalMinutes / 6);
+const weightedHours = Math.floor(weightedMinutes / 60);
+const weightedRemainingMinutes = weightedMinutes % 60;
+
+return `${weightedHours}h ${weightedRemainingMinutes}m`;
+}
+
+function calculateNightAmount(weightedMinutes, basicPay, da) {
+if (!weightedMinutes) return 0;
+
+const match = weightedMinutes.match(/(\d+)h\s*(\d*)m/);
+if (match) {
+const hours = parseInt(match[1]);
+const minutes = match[2] ? parseInt(match[2]) : 0;
+const totalWeightedMinutes = hours * 60 + minutes;
+
+const ratePer60Minutes = (basicPay + da) / 200;
+
+const amount = (ratePer60Minutes / 60) * totalWeightedMinutes;
+return Math.round(amount);
+}
+return 0;
+}
+
+timeOn.addEventListener('change', () => {
+durationInput.value = calcDuration(timeOn.value, timeOff.value);
+if (!taDepartureTime.value) {
+taDepartureTime.value = timeOn.value;
+}
+});
+
+timeOff.addEventListener('change', () => {
+durationInput.value = calcDuration(timeOn.value, timeOff.value);
+if (!taReturnArrivalTime.value) {
+taReturnArrivalTime.value = timeOff.value;
+}
+});
+
+nightDutyFrom.addEventListener('change', updateNightHours);
+nightDutyTo.addEventListener('change', updateNightHours);
+
+function updateNightHours() {
+const hours = calculateNightHours(nightDutyFrom.value, nightDutyTo.value);
+nightDutyHours.value = hours;
+
+if (hours) {
+const weighted = calculateWeightedMinutes(nightDutyFrom.value, nightDutyTo.value);
+nightWeightedHours.value = weighted;
+
+const profile = JSON.parse(localStorage.getItem('ta_profile')) || {};
+const basicPay = parseFloat(profile.basicPay) || 0;
+const daAmount = parseFloat(profile.daAmount) || 0;
+if (basicPay > 0 && daAmount > 0) {
+const amount = calculateNightAmount(weighted, basicPay, daAmount);
+document.getElementById('nightDutyAmount').value = amount;
+}
+}
+}
+
+taApplicable.addEventListener('change', () => {
+taFields.style.display = taApplicable.checked ? 'block' : 'none';
+});
+
+nightDutyApplicable.addEventListener('change', () => {
+nightDutyFields.style.display = nightDutyApplicable.checked ? 'block' : 'none';
+});
+
+statusSelect.addEventListener('change', () => {
+if (statusSelect.value === 'present') {
+presentFields.style.display = 'block';
+leaveTypeFields.style.display = 'none';
+} else if (statusSelect.value === 'leave') {
+presentFields.style.display = 'none';
+leaveTypeFields.style.display = 'block';
+taApplicable.checked = false;
+taFields.style.display = 'none';
+nightDutyApplicable.checked = false;
+nightDutyFields.style.display = 'none';
+} else {
+presentFields.style.display = 'none';
+leaveTypeFields.style.display = 'none';
+taApplicable.checked = false;
+taFields.style.display = 'none';
+nightDutyApplicable.checked = false;
+nightDutyFields.style.display = 'none';
+}
+});
+
+taTravelMode.addEventListener('change', () => {
+if (taTravelMode.value === 'train') {
+trainNoContainer.style.display = 'block';
+if (taOnwardTrainNo.value === 'By Road') taOnwardTrainNo.value = '';
+if (taReturnTrainNo.value === 'By Road') taReturnTrainNo.value = '';
+} else {
+trainNoContainer.style.display = 'none';
+taOnwardTrainNo.value = 'By Road';
+taReturnTrainNo.value = 'By Road';
+}
+});
+
+saveBtn.addEventListener('click', () => {
+if (!activeDateKey) return;
+
+const payload = {
+status: statusSelect.value,
+notes: notes.value.trim()
+};
+
+if (statusSelect.value === 'leave') {
+payload.leaveType = leaveTypeSelect.value;
+}
+
+if (statusSelect.value === 'present') {
+payload.timeOn = timeOn.value;
+payload.timeOff = timeOff.value;
+payload.shift = shiftSelect.value;
+payload.duration = durationInput.value || calcDuration(timeOn.value, timeOff.value);
+
+if (taApplicable.checked) {
+payload.taTravelMode = taTravelMode.value;
+if (taTravelMode.value === 'train') {
+payload.taOnwardTrainNo = taOnwardTrainNo.value.trim();
+payload.taReturnTrainNo = taReturnTrainNo.value.trim();
+} else {
+payload.taOnwardTrainNo = 'By Road';
+payload.taReturnTrainNo = 'By Road';
+}
+
+payload.taFrom = taFrom.value.trim();
+payload.taTo = taTo.value.trim();
+payload.taDepartureTime = taDepartureTime.value;
+payload.taArrivalTime = taArrivalTime.value;
+payload.taReturnDepartureTime = taReturnDepartureTime.value;
+payload.taReturnArrivalTime = taReturnArrivalTime.value;
+payload.taObject = taObject.value.trim();
+}
+
+if (nightDutyApplicable.checked) {
+payload.nightDutyApplicable = true;
+payload.nightShiftFrom = nightShiftFrom.value;
+payload.nightShiftTo = nightShiftTo.value;
+payload.nightDutyFrom = nightDutyFrom.value;
+payload.nightDutyTo = nightDutyTo.value;
+payload.nightDutyHours = nightDutyHours.value || calculateNightHours(nightDutyFrom.value, nightDutyTo.value);
+payload.nightWeightedHours = calculateWeightedMinutes(nightDutyFrom.value, nightDutyTo.value);
+payload.nightDutyObject = nightDutyObject.value.trim();
+
+const profile = JSON.parse(localStorage.getItem('ta_profile')) || {};
+const basicPay = parseFloat(profile.basicPay) || 0;
+const daAmount = parseFloat(profile.daAmount) || 0;
+if (basicPay > 0 && daAmount > 0) {
+payload.nightDutyAmount = calculateNightAmount(payload.nightWeightedHours, basicPay, daAmount);
+}
+}
+}
+
+const hasAny = Object.values(payload).some(v => v && v !== '');
+if (!hasAny) {
+delete state.data[activeDateKey];
+} else {
+state.data[activeDateKey] = payload;
+}
+
+saveMonthData();
+renderCalendar();
+closeModal();
+});
+
+closeBtn.addEventListener('click', () => closeModal());
+
+deleteBtn.addEventListener('click', () => {
+if (!activeDateKey) return;
+if (confirm('Delete entry for ' + activeDateKey + ' ?')) {
+delete state.data[activeDateKey];
+saveMonthData();
+renderCalendar();
+closeModal();
+}
+});
+
+exportCsvBtn.addEventListener('click', () => {
+const rows = [['date', 'status', 'leaveType', 'timeOn', 'timeOff', 'duration', 'shift', 'taTravelMode', 'taOnwardTrainNo', 'taReturnTrainNo', 'taFrom', 'taTo', 'taDepartureTime', 'taArrivalTime', 'taReturnDepartureTime', 'taReturnArrivalTime', 'taObject', 'notes', 'nightDutyApplicable', 'nightShiftFrom', 'nightShiftTo', 'nightDutyFrom', 'nightDutyTo', 'nightDutyHours', 'nightWeightedHours', 'nightDutyObject', 'nightDutyAmount']];
+const key = storageKey();
+const raw = JSON.parse(localStorage.getItem(key) || '{}');
+
+for (const d in raw) {
+const r = raw[d];
+rows.push([
+d,
+r.status || '',
+r.leaveType || '',
+r.timeOn || '',
+r.timeOff || '',
+r.duration || '',
+r.shift || '',
+r.taTravelMode || '',
+r.taOnwardTrainNo || '',
+r.taReturnTrainNo || '',
+r.taFrom || '',
+r.taTo || '',
+r.taDepartureTime || '',
+r.taArrivalTime || '',
+r.taReturnDepartureTime || '',
+r.taReturnArrivalTime || '',
+r.taObject || '',
+(r.notes || '').replace(/\n/g, ' '),
+r.nightDutyApplicable || '',
+r.nightShiftFrom || '',
+r.nightShiftTo || '',
+r.nightDutyFrom || '',
+r.nightDutyTo || '',
+r.nightDutyHours || '',
+r.nightWeightedHours || '',
+r.nightDutyObject || '',
+r.nightDutyAmount || ''
+]);
+}
+
+if (rows.length === 1) {
+alert('No data to export for this month.');
+return;
+}
+
+const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n');
+const blob = new Blob([csv], { type: 'text/csv' });
+const url = URL.createObjectURL(blob);
+const a = document.createElement('a');
+a.href = url;
+a.download = `${key}.csv`;
+document.body.appendChild(a);
+a.click();
+a.remove();
+URL.revokeObjectURL(url);
+});
+
+exportPdfBtn.addEventListener('click', () => {
+alert('PDF export would be implemented here');
+});
+
+printBtn.addEventListener('click', () => {
+window.print();
+});
+
+shiftPreset.addEventListener('change', () => {
+const v = shiftPreset.value;
+if (v === 'morning') {
+shiftSelect.value = 'morning';
+} else if (v === 'evening') {
+shiftSelect.value = 'evening';
+} else if (v === 'night') {
+shiftSelect.value = 'night';
+}
+});
+
+function updateSummary() {
+let p = 0, a = 0, l = 0, r = 0, h = 0, dd = 0, th = 0, ta = 0, daysCount = 0;
+
+for (const k in state.data) {
+const e = state.data[k];
+if (!e) continue;
+
+if (e.status === 'present') p++;
+if (e.status === 'absent') a++;
+if (e.status === 'leave') l++;
+if (e.status === 'rest') r++;
+if (e.status === 'holiday') h++;
+if (e.timeOn || e.timeOff) dd++;
+
+if (e.duration) {
+const parts = e.duration.match(/(\d+)h\s*(\d+)m/);
+if (parts) {
+th += parseInt(parts[1]) * 60 + parseInt(parts[2]);
+}
+}
+
+if (e.taFrom || e.taTo) ta++;
+}
+
+const daysInMonth = new Date(state.year, state.month, 0).getDate();
+daysCount = daysInMonth;
+
+sumPresent.textContent = p;
+sumAbsent.textContent = a;
+sumLeave.textContent = l;
+sumRest.textContent = r;
+sumHoliday.textContent = h;
+
+statDays.textContent = daysCount;
+statHours.textContent = `${Math.floor(th / 60)}h ${th % 60}m`;
+statPresent.textContent = p;
+statLeave.textContent = l;
+statRest.textContent = r;
+statHoliday.textContent = h;
+}
+
+function updateHeaderPayRate() {
+const profile = JSON.parse(localStorage.getItem('ta_profile')) || {};
+const basicPay = profile.basicPay || '';
+const headerPayRateEl = document.getElementById('headerPayRate');
+if (basicPay) {
+headerPayRateEl.textContent = `Basic Pay: ₹${basicPay}`;
+} else {
+headerPayRateEl.textContent = 'Setup Profile';
+}
+}
+
+function loadStateFromCustomPicker() {
+const year = parseInt(yearSelect.value);
+const month = parseInt(monthSelect.value);
+state.year = year;
+state.month = month;
+loadMonthData();
+renderCalendar();
+}
+
+yearSelect.addEventListener('change', loadStateFromCustomPicker);
+monthSelect.addEventListener('change', loadStateFromCustomPicker);
+
+uploadPhotoBtn.addEventListener('click', () => {
+profilePhotoUpload.click();
+});
+
+profilePhotoUpload.addEventListener('change', (e) => {
+const file = e.target.files[0];
+if (file) {
+const reader = new FileReader();
+reader.onload = (event) => {
+const imageData = event.target.result;
+localStorage.setItem('profile_photo', imageData);
+loadProfilePhoto();
+loadProfilePhotoPreview();
+};
+reader.readAsDataURL(file);
+}
+});
+
+function loadProfilePhoto() {
+const photoData = localStorage.getItem('profile_photo');
+if (photoData) {
+profilePhotoContainer.innerHTML = `<img src="${photoData}" class="profile-photo" alt="Profile Photo">`;
+} else {
+profilePhotoContainer.innerHTML = `<div class="profile-photo-placeholder">Upload Photo</div>`;
+}
+}
+
+function loadProfilePhotoPreview() {
+const photoData = localStorage.getItem('profile_photo');
+if (photoData) {
+profilePhotoPreviewContainer.innerHTML = `<img src="${photoData}" class="profile-photo" alt="Profile Photo">`;
+} else {
+profilePhotoPreviewContainer.innerHTML = `<div class="profile-photo-placeholder">Upload Photo</div>`;
+}
+}
+
+function checkTodayAttendance() {
+const today = new Date();
+const todayYMD = formatYMD(today.getFullYear(), today.getMonth() + 1, today.getDate());
+
+const todayEntry = state.data[todayYMD];
+const isMarked = todayEntry && todayEntry.status;
+
+if (!isMarked) {
+notificationBadge.style.display = 'flex';
+
+if ("Notification" in window && Notification.permission === "granted") {
+new Notification("Attendance Reminder", {
+body: "Don't forget to mark today's attendance!",
+icon: "/favicon.ico"
+});
+} else {
+notificationBadge.style.display = 'none';
+}
+}
+}
+
+notificationBell.addEventListener('click', () => {
+const today = new Date();
+const todayYMD = formatYMD(today.getFullYear(), today.getMonth() + 1, today.getDate());
+
+const todayEntry = state.data[todayYMD];
+const isMarked = todayEntry && todayEntry.status;
+
+if (!isMarked) {
+openModal(todayYMD);
+} else {
+alert("Today's attendance is already marked!");
+}
+});
+
+if ("Notification" in window && Notification.permission === "default") {
+Notification.requestPermission();
+}
+
+quickMarkPresentBtn.addEventListener('click', () => {
+const today = new Date();
+const todayYMD = formatYMD(today.getFullYear(), today.getMonth() + 1, today.getDate());
+
+if (state.year === today.getFullYear() && state.month === today.getMonth() + 1) {
+state.data[todayYMD] = {
+...(state.data[todayYMD] || {}),
+status: 'present',
+timeOn: '09:00',
+timeOff: '17:00',
+shift: 'morning',
+duration: '8h 0m'
+};
+
+saveMonthData();
+renderCalendar();
+
+alert("Today marked as present successfully!");
+} else {
+alert("Please navigate to the current month to mark today's attendance.");
+}
+});
+
+setupProfileBtn.addEventListener('click', openProfileModal);
+closeProfileModalBtn.addEventListener('click', closeProfileModal);
+saveProfileBtn.addEventListener('click', saveProfile);
+
+profileBasicPay.addEventListener('input', calculateDAAmount);
+profileDAPercentage.addEventListener('input', calculateDAAmount);
+
+function calculateDAAmount() {
+const basicPay = parseFloat(profileBasicPay.value) || 0;
+const daPercentage = parseFloat(profileDAPercentage.value) || 0;
+
+if (basicPay > 0 && daPercentage > 0) {
+const daAmount = (basicPay * daPercentage) / 100;
+profileDAAmount.value = Math.round(daAmount);
+} else {
+profileDAAmount.value = '';
+}
+}
+
+function openProfileModal() {
+loadProfileData();
+loadProfilePhotoPreview();
+profileModal.style.display = 'flex';
+}
+
+function closeProfileModal() {
+profileModal.style.display = 'none';
+}
+
+function loadProfileData() {
+const profile = JSON.parse(localStorage.getItem('ta_profile')) || {};
+document.getElementById('profileEmployeeName').value = profile.employeeName || '';
+document.getElementById('profileFatherName').value = profile.fatherName || '';
+document.getElementById('profileDesignation').value = profile.designation || '';
+document.getElementById('profileDepartment').value = profile.department || '';
+document.getElementById('profileHeadQuarter').value = profile.headQuarter || '';
+document.getElementById('profileEmpNo').value = profile.empNo || '';
+document.getElementById('profileBasicPay').value = profile.basicPay || '';
+document.getElementById('profileDAPercentage').value = profile.daPercentage || '';
+document.getElementById('profileDAAmount').value = profile.daAmount || '';
+document.getElementById('profileTaRate').value = profile.taRate || '';
+document.getElementById('profileDOA').value = profile.doa || '';
+document.getElementById('profileRailwayZone').value = profile.railwayZone || '';
+
+// Load sector data
+if (profile.sector) {
+const sectorRadio = document.querySelector(`input[name="sector"][value="${profile.sector}"]`);
+if (sectorRadio) {
+sectorRadio.checked = true;
+sectorRadio.dispatchEvent(new Event('change'));
+}
+}
+
+if (profile.governmentType) {
+document.getElementById('governmentType').value = profile.governmentType;
+}
+
+if (profile.governmentDepartment) {
+document.getElementById('governmentDepartment').value = profile.governmentDepartment;
+governmentDepartment.dispatchEvent(new Event('change'));
+}
+
+if (profile.companyName) {
+document.getElementById('companyName').value = profile.companyName;
+}
+
+if (profile.industry) {
+document.getElementById('industry').value = profile.industry;
+}
+}
+
+function saveProfile() {
+const profile = {
+employeeName: document.getElementById('profileEmployeeName').value,
+fatherName: document.getElementById('profileFatherName').value,
+designation: document.getElementById('profileDesignation').value,
+department: document.getElementById('profileDepartment').value,
+headQuarter: document.getElementById('profileHeadQuarter').value,
+empNo: document.getElementById('profileEmpNo').value,
+basicPay: document.getElementById('profileBasicPay').value,
+daPercentage: document.getElementById('profileDAPercentage').value,
+daAmount: document.getElementById('profileDAAmount').value,
+taRate: document.getElementById('profileTaRate').value,
+doa: document.getElementById('profileDOA').value,
+railwayZone: document.getElementById('profileRailwayZone').value,
+sector: document.querySelector('input[name="sector"]:checked')?.value || '',
+governmentType: document.getElementById('governmentType').value,
+governmentDepartment: document.getElementById('governmentDepartment').value,
+companyName: document.getElementById('companyName').value,
+industry: document.getElementById('industry').value
+};
+
+localStorage.setItem('ta_profile', JSON.stringify(profile));
+alert('Profile saved successfully!');
+closeProfileModal();
+updateHeaderPayRate();
+
+// Update TA and Night form buttons visibility based on sector and department
+const openTaFormBtn = document.getElementById('openTaForm');
+const openNightFormBtn = document.getElementById('openNightForm');
+if (profile.sector === 'government' && profile.governmentDepartment === 'railway') {
+openTaFormBtn.style.display = 'block';
+openNightFormBtn.style.display = 'block';
+} else {
+openTaFormBtn.style.display = 'none';
+openNightFormBtn.style.display = 'none';
+}
+}
+
+let taFormData = {
+header: {},
+rows: []
+};
+
+openTaFormBtn.addEventListener('click', () => {
+const profile = JSON.parse(localStorage.getItem('ta_profile')) || {};
+if (!profile.employeeName) {
+alert('Please setup your profile first using the "Setup Profile" button.');
+return;
+}
+
+loadTaFormData();
+autoFillTaForm();
+openTaModal();
+});
+
+closeTaModalBtn.addEventListener('click', closeTaModal);
+
+addTaRowBtn.addEventListener('click', addTaRow);
+
+printTaFormBtn.addEventListener('click', printTaForm);
+
+saveTaFormBtn.addEventListener('click', saveTaForm);
+
+function autoFillProfileData() {
+const profile = JSON.parse(localStorage.getItem('ta_profile')) || {};
+if (profile.employeeName) {
+document.getElementById('taEmployeeName').value = profile.employeeName;
+}
+if (profile.fatherName) {
+document.getElementById('taFatherName').value = profile.fatherName;
+}
+if (profile.designation) {
+document.getElementById('taDesignation').value = profile.designation;
+}
+if (profile.department) {
+document.getElementById('taDepartment').value = profile.department;
+}
+if (profile.headQuarter) {
+document.getElementById('taHeadQuarter').value = profile.headQuarter;
+}
+if (profile.doa) {
+document.getElementById('taDOA').value = profile.doa;
+}
+if (profile.empNo) {
+document.getElementById('taEmpNo').value = profile.empNo;
+}
+if (profile.basicPay) {
+document.getElementById('taBasicPay').value = profile.basicPay;
+}
+if (profile.railwayZone) {
+document.getElementById('taRailwayZone').textContent = profile.railwayZone;
+document.getElementById('taFormTitle').textContent = `${profile.railwayZone} - Travelling Allowance Form`;
+}
+
+// Use selected month from calendar instead of current month
+const selectedMonth = new Date(state.year, state.month - 1, 1);
+const monthName = selectedMonth.toLocaleString('default', { month: 'long' });
+const yearVal = selectedMonth.getFullYear();
+document.getElementById('taMonth').value = `${monthName} ${yearVal}`;
+}
+
+function calculatePercentage(duration) {
+if (!duration) return "0%";
+const hoursMatch = duration.match(/(\d+)h\s*(\d*)m/);
+if (hoursMatch) {
+const hours = parseInt(hoursMatch[1]);
+const minutes = hoursMatch[2] ? parseInt(hoursMatch[2]) : 0;
+const totalHours = hours + (minutes / 60);
+
+if (totalHours >= 12) {
+return "100%";
+} else if (totalHours >= 8) {
+return "70%";
+} else if (totalHours > 0) {
+return "30%";
+}
+}
+return "0%";
+}
+
+function updateTaSummary() {
+let count30 = 0;
+let count70 = 0;
+let count100 = 0;
+let totalAmount = 0;
+
+const rows = taTableBody.querySelectorAll('tr');
+rows.forEach(row => {
+const inputs = row.querySelectorAll('input');
+const percentage = inputs[13].value;
+const amount = parseFloat(inputs[14].value) || 0;
+
+if (percentage === '30%') count30++;
+else if (percentage === '70%') count70++;
+else if (percentage === '100%') count100++;
+totalAmount += amount;
+});
+
+document.getElementById('count30').textContent = count30;
+document.getElementById('count70').textContent = count70;
+document.getElementById('count100').textContent = count100;
+document.getElementById('totalAmount').textContent = `₹${totalAmount.toLocaleString()}`;
+
+// Calculate and display total days
+const totalDays = count30 + count70 + count100;
+const _tdElem = document.getElementById('totalDays');
+    if (_tdElem) _tdElem.textContent = totalDays;
+}
+
+function setupTaTableListeners() {
+taTableBody.addEventListener('input', function(e) {
+const target = e.target;
+if (target.classList.contains('ta-percentage') || target.classList.contains('ta-amount')) {
+updateTaSummary();
+}
+if (target.classList.contains('ta-percentage')) {
+autoCalculateAmount(target);
+}
+});
+}
+
+function autoCalculateAmount(percentageInput) {
+const row = percentageInput.closest('tr');
+const inputs = row.querySelectorAll('input');
+const percentage = percentageInput.value;
+const rate = parseFloat(inputs[12].value) || 0;
+
+if (rate > 0 && percentage) {
+const percentValue = parseFloat(percentage) || 0;
+const amount = (rate * percentValue) / 100;
+inputs[14].value = Math.round(amount);
+}
+}
+
+function saveTaFooterData() {
+const footerData = {
+controllingOfficer: document.getElementById('taControllingOfficer').value,
+headOffice: document.getElementById('taHeadOffice').value,
+signature: document.getElementById('taSignature').value
+};
+localStorage.setItem('ta_footer_data', JSON.stringify(footerData));
+}
+
+function loadTaFooterData() {
+const footerData = JSON.parse(localStorage.getItem('ta_footer_data')) || {};
+document.getElementById('taControllingOfficer').value = footerData.controllingOfficer || '';
+document.getElementById('taHeadOffice').value = footerData.headOffice || '';
+document.getElementById('taSignature').value = footerData.signature || '';
+}
+
+function autoFillTaForm() {
+autoFillProfileData();
+taTableBody.innerHTML = '';
+
+const taEntries = [];
+for (const date in state.data) {
+const entry = state.data[date];
+if (entry && (entry.taFrom || entry.taTo)) {
+taEntries.push({
+date: date.split('-').reverse().join('/'),
+taTravelMode: entry.taTravelMode,
+taOnwardTrainNo: entry.taOnwardTrainNo,
+taReturnTrainNo: entry.taReturnTrainNo,
+taFrom: entry.taFrom,
+taTo: entry.taTo,
+taDepartureTime: entry.taDepartureTime,
+taArrivalTime: entry.taArrivalTime,
+taReturnDepartureTime: entry.taReturnDepartureTime,
+taReturnArrivalTime: entry.taReturnArrivalTime,
+taObject: entry.taObject,
+timeOn: entry.timeOn,
+timeOff: entry.timeOff,
+duration: entry.duration,
+notes: entry.notes
+});
+}
+}
+
+const profile = JSON.parse(localStorage.getItem('ta_profile')) || {};
+// --- Fix: ensure TA entries are ordered chronologically (earliest date first)
+taEntries.sort((a, b) => {
+  function toDate(ddmmyyyy) {
+    const parts = ddmmyyyy.split('/');
+    if (parts.length !== 3) return new Date(ddmmyyyy);
+    const [d, m, y] = parts;
+    return new Date(`${y}-${m}-${d}`);
+  }
+  return toDate(a.date) - toDate(b.date);
+});
+// --- End TA sort
+
+taEntries.forEach((entry, index) => {
+addTaRow();
+const rows = taTableBody.querySelectorAll('tr');
+const currentRow = rows[rows.length - 1];
+const inputs = currentRow.querySelectorAll('input');
+
+inputs[0].value = entry.date;
+inputs[1].value = entry.date;
+
+if (entry.taTravelMode === 'train') {
+inputs[2].value = entry.taOnwardTrainNo || '';
+inputs[3].value = entry.taReturnTrainNo || '';
+} else {
+inputs[2].value = 'By Road';
+inputs[3].value = 'By Road';
+}
+
+inputs[4].value = entry.taDepartureTime || '';
+inputs[5].value = entry.taArrivalTime || '';
+inputs[6].value = entry.taFrom || '';
+inputs[7].value = entry.taTo || '';
+inputs[8].value = entry.taReturnDepartureTime || '';
+inputs[9].value = entry.taReturnArrivalTime || '';
+inputs[10].value = entry.taObject || entry.notes || 'Official Duty';
+inputs[11].value = entry.duration || '';
+
+const percentage = calculatePercentage(entry.duration);
+inputs[13].value = percentage;
+
+const taRate = profile.taRate || '';
+if (taRate && percentage !== "0%") {
+inputs[12].value = taRate;
+const rateValue = parseFloat(taRate.replace(/,/g, '')) || 0;
+const percentValue = parseFloat(percentage) || 0;
+const amount = (rateValue * percentValue) / 100;
+inputs[14].value = Math.round(amount);
+}
+});
+
+if (taEntries.length === 0) {
+addTaRow();
+}
+updateTaSummary();
+}
+
+function openTaModal() {
+taModal.style.display = 'flex';
+setupTaTableListeners();
+updateTaSummary();
+loadTaFooterData();
+}
+
+function closeTaModal() {
+taModal.style.display = 'none';
+}
+
+function addTaRow() {
+const rowCount = taTableBody.children.length;
+const row = document.createElement('tr');
+row.innerHTML = `
+<td style="border: 1px solid #000; padding: 1.5px;" class="date-column">
+<input type="text" class="ta-date-onward" placeholder="DD/MM/YY" style="width: 100%; border: none; padding: 0.75px; font-size: 6px; font-weight: 600; color: #1e40af;">
+</td>
+<td style="border: 1px solid #000; padding: 1.5px;" class="date-column">
+<input type="text" class="ta-date-return" placeholder="DD/MM/YY" style="width: 100%; border: none; padding: 0.75px; font-size: 6px; font-weight: 600; color: #1e40af;">
+</td>
+<td style="border: 1px solid #000; padding: 1.5px;">
+<input type="text" class="ta-onward-train" placeholder="Onward Train No" style="width: 100%; border: none; padding: 0.75px; font-size: 6px;">
+</td>
+<td style="border: 1px solid #000; padding: 1.5px;">
+<input type="text" class="ta-return-train" placeholder="Return Train No" style="width: 100%; border: none; padding: 0.75px; font-size: 6px;">
+</td>
+<td style="border: 1px solid #000; padding: 1.5px;">
+<input type="text" class="ta-departure-time" placeholder="HH:MM" style="width: 100%; border: none; padding: 0.75px; font-size: 6px;">
+</td>
+<td style="border: 1px solid #000; padding: 1.5px;">
+<input type="text" class="ta-arrival-time" placeholder="HH:MM" style="width: 100%; border: none; padding: 0.75px; font-size: 6px;">
+</td>
+<td style="border: 1px solid #000; padding: 1.5px;">
+<input type="text" class="ta-station-from" placeholder="Station From" style="width: 100%; border: none; padding: 0.75px; font-size: 6px;">
+</td>
+<td style="border: 1px solid #000; padding: 1.5px;">
+<input type="text" class="ta-station-to" placeholder="Station To" style="width: 100%; border: none; padding: 0.75px; font-size: 6px;">
+</td>
+<td style="border: 1px solid #000; padding: 1.5px;">
+<input type="text" class="ta-return-departure" placeholder="HH:MM" style="width: 100%; border: none; padding: 0.75px; font-size: 6px;">
+</td>
+<td style="border: 1px solid #000; padding: 1.5px;">
+<input type="text" class="ta-return-arrival" placeholder="HH:MM" style="width: 100%; border: none; padding: 0.75px; font-size: 6px;">
+</td>
+<td style="border: 1px solid #000; padding: 1.5px;">
+<input type="text" class="ta-journey-object" placeholder="Object of journey" style="width: 100%; border: none; padding: 0.75px; font-size: 6px;">
+</td>
+<td style="border: 1px solid #000; padding: 1.5px;">
+<input type="text" class="ta-date-hours" placeholder="08:14" style="width: 100%; border: none; padding: 0.75px; font-size: 6px;">
+</td>
+<td style="border: 1px solid #000; padding: 1.5px;">
+<input type="text" class="ta-rate" placeholder="635" style="width: 100%; border: none; padding: 0.75px; font-size: 6px;">
+</td>
+<td style="border: 1px solid #000; padding: 1.5px;">
+<input type="text" class="ta-percentage" placeholder="20%" style="width: 100%; border: none; padding: 0.75px; font-size: 6px;">
+</td>
+<td style="border: 1px solid #000; padding: 1.5px;">
+<input type="text" class="ta-amount" placeholder="433" style="width: 100%; border: none; padding: 0.75px; font-size: 6px;">
+</td>
+`;
+taTableBody.appendChild(row);
+}
+
+function loadTaFormData() {
+const saved = localStorage.getItem('ta_form_data');
+if (saved) {
+taFormData = JSON.parse(saved);
+if (taFormData.header) {
+document.getElementById('taDepartment').value = taFormData.header.department || '';
+document.getElementById('taHeadQuarter').value = taFormData.header.headQuarter || '';
+document.getElementById('taEmployeeName').value = taFormData.header.employeeName || '';
+document.getElementById('taFatherName').value = taFormData.header.fatherName || '';
+document.getElementById('taDesignation').value = taFormData.header.designation || '';
+document.getElementById('taMonth').value = taFormData.header.month || '';
+document.getElementById('taBasicPay').value = taFormData.header.basicPay || '';
+document.getElementById('taEmpNo').value = taFormData.header.empNo || '';
+document.getElementById('taDOA').value = taFormData.header.doa || '';
+}
+taTableBody.innerHTML = '';
+if (taFormData.rows && taFormData.rows.length > 0) {
+taFormData.rows.forEach(rowData => {
+addTaRow();
+const lastRow = taTableBody.lastElementChild;
+const inputs = lastRow.querySelectorAll('input');
+inputs[0].value = rowData.onwardDate || '';
+inputs[1].value = rowData.returnDate || '';
+inputs[2].value = rowData.onwardTrain || '';
+inputs[3].value = rowData.returnTrain || '';
+inputs[4].value = rowData.departureTime || '';
+inputs[5].value = rowData.arrivalTime || '';
+inputs[6].value = rowData.stationFrom || '';
+inputs[7].value = rowData.stationTo || '';
+inputs[8].value = rowData.returnDeparture || '';
+inputs[9].value = rowData.returnArrival || '';
+inputs[10].value = rowData.journeyObject || '';
+inputs[11].value = rowData.dateHours || '';
+inputs[12].value = rowData.rate || '';
+inputs[13].value = rowData.percentage || '';
+inputs[14].value = rowData.amount || '';
+});
+}
+} else {
+addTaRow();
+}
+}
+
+function saveTaFormData() {
+const profile = JSON.parse(localStorage.getItem('ta_profile')) || {};
+taFormData.header = {
+department: document.getElementById('taDepartment').value,
+headQuarter: document.getElementById('taHeadQuarter').value,
+employeeName: document.getElementById('taEmployeeName').value,
+fatherName: document.getElementById('taFatherName').value,
+designation: document.getElementById('taDesignation').value,
+month: document.getElementById('taMonth').value,
+basicPay: document.getElementById('taBasicPay').value,
+empNo: document.getElementById('taEmpNo').value,
+doa: document.getElementById('taDOA').value,
+railwayZone: profile.railwayZone || 'RAILWAY ZONE'
+};
+
+taFormData.rows = [];
+const rows = taTableBody.querySelectorAll('tr');
+rows.forEach(row => {
+const inputs = row.querySelectorAll('input');
+taFormData.rows.push({
+onwardDate: inputs[0].value,
+returnDate: inputs[1].value,
+onwardTrain: inputs[2].value,
+returnTrain: inputs[3].value,
+departureTime: inputs[4].value,
+arrivalTime: inputs[5].value,
+stationFrom: inputs[6].value,
+stationTo: inputs[7].value,
+returnDeparture: inputs[8].value,
+returnArrival: inputs[9].value,
+journeyObject: inputs[10].value,
+dateHours: inputs[11].value,
+rate: inputs[12].value,
+percentage: inputs[13].value,
+amount: inputs[14].value
+});
+});
+
+localStorage.setItem('ta_form_data', JSON.stringify(taFormData));
+}
+
+function printTaForm() {
+saveTaFormData();
+saveTaFooterData();
+
+const printWindow = window.open('', '_blank');
+printWindow.document.write(`
+<!DOCTYPE html>
+<html>
+<head>
+<title>TA Form Print</title>
+<style>
+body { font-family: Arial, sans-serif; margin: 10px; }
+.ta-form-header { border: 1px solid #000; padding: 7.5px; margin-bottom: 11.25px; }
+.ta-header-title { text-align: center; margin-bottom: 7.5px; }
+.ta-header-title div:first-child { font-size: 12px; font-weight: bold; }
+.ta-header-title div:last-child { font-size: 10.5px; }
+.ta-header-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 3.75px; margin-top: 3.75px; }
+.ta-header-item { display: flex; align-items: center; gap: 3.75px; }
+.ta-header-item label { font-weight: bold; min-width: 75px; font-size: 9px; margin: 0; }
+.ta-header-item input { flex: 1; border: none; border-bottom: 1px solid #ccc; padding: 1.5px; background: transparent; font-size: 9px; }
+.ta-table-container { margin-bottom: 11.25px; }
+.ta-table-container table { width: 100%; border-collapse: collapse; font-size: 7.5px; }
+.ta-table-container th, .ta-table-container td { border: 1px solid #000; padding: 2.25px; text-align: left; }
+.ta-table-container th { background: #f0f0f0; font-weight: bold; }
+.ta-table-container input { width: 100%; border: none; padding: 1.5px; background: transparent; }
+.ta-summary { border: 1px solid #ccc; padding: 7.5px; background: #f9f9f9; margin-top: 7.5px; }
+.ta-summary-title { font-weight: bold; margin-bottom: 3.75px; font-size: 9px; }
+.ta-summary-grid { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr 1fr; gap: 7.5px; text-align: center; }
+.ta-summary-item { font-size: 8.25px; }
+.ta-summary-value { font-weight: bold; font-size: 10.5px; }
+.ta-footer { border: 1px solid #ccc; padding: 7.5px; background: #f9f9f9; margin-top: 7.5px; }
+.ta-footer-title { font-weight: bold; margin-bottom: 3.75px; font-size: 9px; }
+.ta-signature-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 7.5px; }
+.ta-signature-item { display: flex; flex-direction: column; }
+.ta-signature-label { font-size: 8.25px; color: #666; margin-bottom: 3.75px; }
+.ta-signature-line { border-bottom: 1px solid #000; padding-bottom: 7.5px; min-height: 15px; }
+.ta-declaration { margin-top: 7.5px; border: 1px solid #ccc; padding: 4.5px; background: #f9f9f9; font-size: 6px; line-height: 1.2; }
+.ta-declaration-title { font-weight: bold; margin-bottom: 2.25px; font-size: 6.75px; }
+.ta-declaration-list { margin: 0; padding-left: 9px; }
+.ta-declaration-list li { margin-bottom: 1.5px; }
+.ta-certificate-note { margin-top: 6px; font-size: 6px; text-align: center; color: #666; line-height: 1.2; padding: 3px; border-top: 1px solid #ccc; }
+@media print { body { margin: 0; } .ta-form-header, .ta-table-container, .ta-summary, .ta-footer, .ta-declaration, .ta-certificate-note { break-inside: avoid; } }
+</style>
+</head>
+<body>
+<div class="ta-form-header">
+<div class="ta-header-title">
+<div id="taRailwayZonePrint">${taFormData.header.railwayZone || 'RAILWAY ZONE'}</div>
+<div>Travelling Allowance Journal</div>
+</div>
+<div class="ta-header-grid">
+<div class="ta-header-item">
+<label>Department:</label>
+<input value="${taFormData.header.department || ''}" readonly>
+</div>
+<div class="ta-header-item">
+<label>Head Quarter:</label>
+<input value="${taFormData.header.headQuarter || ''}" readonly>
+</div>
+<div class="ta-header-item">
+<label>Employee Name:</label>
+<input value="${taFormData.header.employeeName || ''}" readonly>
+</div>
+<div class="ta-header-item">
+<label>Father's Name:</label>
+<input value="${taFormData.header.fatherName || ''}" readonly>
+</div>
+<div class="ta-header-item">
+<label>Designation:</label>
+<input value="${taFormData.header.designation || ''}" readonly>
+</div>
+<div class="ta-header-item">
+<label>Month:</label>
+<input value="${taFormData.header.month || ''}" readonly>
+</div>
+<div class="ta-header-item">
+<label>Basic Pay (Rs.):</label>
+<input value="${taFormData.header.basicPay || ''}" readonly>
+</div>
+<div class="ta-header-item">
+<label>Emp No:</label>
+<input value="${taFormData.header.empNo || ''}" readonly>
+</div>
+<div class="ta-header-item">
+<label>D.O.A:</label>
+<input value="${taFormData.header.doa || ''}" readonly>
+</div>
+</div>
+</div>
+<div class="ta-table-container">
+<table>
+<thead>
+<tr>
+<th style="width: 8%;">Date (From HQ to Dist)</th>
+<th style="width: 8%;">Date (Dist to HQ)</th>
+<th style="width: 5%;">Onward Train No.</th>
+<th style="width: 5%;">Return Train No.</th>
+<th style="width: 5%;">Dept Time (HQ)</th>
+<th style="width: 5%;">Arr Time (Dest)</th>
+<th style="width: 5%;">From</th>
+<th style="width: 5%;">To</th>
+<th style="width: 5%;">Return Dept</th>
+<th style="width: 5%;">Return Arr (HQ)</th>
+<th style="width: 20%;">Object of journey</th>
+<th style="width: 4%;">Hours</th>
+<th style="width: 4%;">Rate</th>
+<th style="width: 4%;">%</th>
+<th style="width: 6%;">Amount Rs.</th>
+</tr>
+</thead>
+<tbody>
+${taFormData.rows.map(row => `
+<tr>
+<td style="border: 1px solid #000; padding: 2.25px;">${row.onwardDate || ''}</td>
+<td style="border: 1px solid #000; padding: 2.25px;">${row.returnDate || ''}</td>
+<td style="border: 1px solid #000; padding: 2.25px;">${row.onwardTrain || ''}</td>
+<td style="border: 1px solid #000; padding: 2.25px;">${row.returnTrain || ''}</td>
+<td style="border: 1px solid #000; padding: 2.25px;">${row.departureTime || ''}</td>
+<td style="border: 1px solid #000; padding: 2.25px;">${row.arrivalTime || ''}</td>
+<td style="border: 1px solid #000; padding: 2.25px;">${row.stationFrom || ''}</td>
+<td style="border: 1px solid #000; padding: 2.25px;">${row.stationTo || ''}</td>
+<td style="border: 1px solid #000; padding: 2.25px;">${row.returnDeparture || ''}</td>
+<td style="border: 1px solid #000; padding: 2.25px;">${row.returnArrival || ''}</td>
+<td style="border: 1px solid #000; padding: 2.25px;">${row.journeyObject || ''}</td>
+<td style="border: 1px solid #000; padding: 2.25px;">${row.dateHours || ''}</td>
+<td style="border: 1px solid #000; padding: 2.25px;">${row.rate || ''}</td>
+<td style="border: 1px solid #000; padding: 2.25px;">${row.percentage || ''}</td>
+<td style="border: 1px solid #000; padding: 2.25px;">${row.amount || ''}</td>
+</tr>
+`).join('')}
+</tbody>
+</table>
+</div>
+<div class="ta-summary">
+<div class="ta-summary-title">Percentage Summary</div>
+<div class="ta-summary-grid">
+<div class="ta-summary-item">
+<div style="font-size: 7.5px; color: #666;">30% Count</div>
+<div class="ta-summary-value" id="count30Print">${document.getElementById('count30').textContent}</div>
+</div>
+<div class="ta-summary-item">
+<div style="font-size: 7.5px; color: #666;">70% Count</div>
+<div class="ta-summary-value" id="count70Print">${document.getElementById('count70').textContent}</div>
+</div>
+<div class="ta-summary-item">
+<div style="font-size: 7.5px; color: #666;">100% Count</div>
+<div class="ta-summary-value" id="count100Print">${document.getElementById('count100').textContent}</div>
+</div>
+<div class="ta-summary-item">
+<div style="font-size: 7.5px; color: #666;">Total Days</div>
+<div class="ta-summary-value" id="totalDaysPrint">${document.getElementById('totalDays').textContent}</div>
+</div>
+<div class="ta-summary-item">
+<div style="font-size: 7.5px; color: #666;">Total Amount</div>
+<div class="ta-summary-value" id="totalAmountPrint">${document.getElementById('totalAmount').textContent}</div>
+</div>
+</div>
+</div>
+
+<div class="ta-declaration">
+<div class="ta-declaration-title">Declaration</div>
+<ol class="ta-declaration-list">
+<li>The T.A. claimed by me has not been claimed before and will not be claimed in future.</li>
+<li>That the time of departure of the train as recorded herein is as actual time when the train started.</li>
+<li>No T.A., D.A. or any other remuneration has been drawn from any other source in respect of the Journey performed on duty free and also forhaltor which T.A., D.A. has been claimed in this bill.</li>
+<li>Adsact No.</li>
+<li>Conveyance charges claimed have actually been spent by me and are according to local municipal rates.</li>
+</ol>
+</div>
+
+<div class="ta-footer">
+<div class="ta-footer-title">Approval & Signature</div>
+<div class="ta-signature-grid">
+<div class="ta-signature-item">
+<div class="ta-signature-label">Controlling Officer</div>
+<div class="ta-signature-line">${document.getElementById('taControllingOfficer').value || ''}</div>
+</div>
+<div class="ta-signature-item">
+<div class="ta-signature-label">Head Office</div>
+<div class="ta-signature-line">${document.getElementById('taHeadOffice').value || ''}</div>
+</div>
+<div class="ta-signature-item">
+<div class="ta-signature-label">Signature</div>
+<div class="ta-signature-line">${document.getElementById('taSignature').value || ''}</div>
+</div>
+</div>
+</div>
+
+<div class="ta-certificate-note">
+This certificate is only required when claim is made for the cost of locomotion whether it the farm of Railway fare or road mallage.
+</div>
+
+<script>
+window.onload = function() { window.print(); }
+<\/script>
+</body>
+</html>
+`);
+printWindow.document.close();
+}
+
+function saveTaForm() {
+saveTaFormData();
+saveTaFooterData();
+
+const profile = JSON.parse(localStorage.getItem('ta_profile')) || {};
+const data = {
+header: taFormData.header,
+rows: taFormData.rows,
+footer: {
+controllingOfficer: document.getElementById('taControllingOfficer').value,
+headOffice: document.getElementById('taHeadOffice').value,
+signature: document.getElementById('taSignature').value
+}
+};
+
+const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+const url = URL.createObjectURL(blob);
+const a = document.createElement('a');
+a.href = url;
+a.download = `ta_form_${state.year}_${state.month}.json`;
+document.body.appendChild(a);
+a.click();
+a.remove();
+URL.revokeObjectURL(url);
+
+alert('TA Form saved and downloaded successfully!');
+}
+
+let nightFormData = {
+header: {},
+rows: []
+};
+
+openNightFormBtn.addEventListener('click', () => {
+const profile = JSON.parse(localStorage.getItem('ta_profile')) || {};
+if (!profile.employeeName) {
+alert('Please setup your profile first using the "Setup Profile" button.');
+return;
+}
+
+loadNightFormData();
+autoFillNightForm();
+openNightModal();
+});
+
+closeNightModalBtn.addEventListener('click', closeNightModal);
+
+addNightRowBtn.addEventListener('click', addNightRow);
+
+printNightFormBtn.addEventListener('click', printNightForm);
+
+saveNightFormBtn.addEventListener('click', saveNightForm);
+
+function autoFillNightForm() {
+autoFillNightProfileData();
+nightTableBody.innerHTML = '';
+
+const nightEntries = [];
+for (const date in state.data) {
+const entry = state.data[date];
+if (entry && entry.nightDutyApplicable) {
+nightEntries.push({
+date: date.split('-').reverse().join('/'),
+nightShiftFrom: entry.nightShiftFrom,
+nightShiftTo: entry.nightShiftTo,
+nightDutyFrom: entry.nightDutyFrom,
+nightDutyTo: entry.nightDutyTo,
+nightDutyHours: entry.nightDutyHours,
+nightWeightedHours: entry.nightWeightedHours,
+nightDutyObject: entry.nightDutyObject,
+nightDutyAmount: entry.nightDutyAmount
+});
+}
+}
+
+const profile = JSON.parse(localStorage.getItem('ta_profile')) || {};
+// --- Fix: ensure Night entries are ordered chronologically (earliest date first)
+nightEntries.sort((a, b) => {
+  function toDate(ddmmyyyy) {
+    const parts = ddmmyyyy.split('/');
+    if (parts.length !== 3) return new Date(ddmmyyyy);
+    const [d, m, y] = parts;
+    return new Date(`${y}-${m}-${d}`);
+  }
+  return toDate(a.date) - toDate(b.date);
+});
+// --- End Night sort
+
+nightEntries.forEach(entry => {
+addNightRow();
+const rows = nightTableBody.querySelectorAll('tr');
+const currentRow = rows[rows.length - 1];
+const inputs = currentRow.querySelectorAll('input');
+
+inputs[0].value = entry.date;
+inputs[1].value = entry.nightShiftFrom || '22:00';
+inputs[2].value = entry.nightShiftTo || '06:00';
+inputs[3].value = entry.nightDutyFrom || '22:00';
+inputs[4].value = entry.nightDutyTo || '06:00';
+inputs[5].value = entry.nightDutyHours || '';
+inputs[6].value = entry.nightWeightedHours || '';
+inputs[7].value = entry.nightDutyObject || '';
+inputs[8].value = entry.nightDutyAmount || '';
+
+if (entry.nightDutyAmount) {
+inputs[9].value = '';
+}
+});
+
+if (nightEntries.length === 0) {
+addNightRow();
+}
+updateNightSummary();
+}
+
+function autoFillNightProfileData() {
+const profile = JSON.parse(localStorage.getItem('ta_profile')) || {};
+if (profile.employeeName) {
+document.getElementById('nightEmployeeName').value = profile.employeeName;
+}
+if (profile.fatherName) {
+document.getElementById('nightSono').value = profile.fatherName;
+}
+if (profile.designation) {
+document.getElementById('nightDesignation').value = profile.designation;
+}
+if (profile.empNo) {
+document.getElementById('nightEmpNo').value = profile.empNo;
+}
+if (profile.headQuarter) {
+document.getElementById('nightStation').value = profile.headQuarter;
+}
+if (profile.basicPay) {
+document.getElementById('nightBasicPay').value = profile.basicPay;
+}
+if (profile.daAmount) {
+document.getElementById('nightDA').value = profile.daAmount;
+}
+if (profile.railwayZone) {
+document.getElementById('nightRailwayZone').textContent = profile.railwayZone;
+document.getElementById('nightFormTitle').textContent = `${profile.railwayZone} - Night Duty Allowance Form`;
+}
+
+// Use selected month from calendar instead of current month
+const selectedMonth = new Date(state.year, state.month - 1, 1);
+const monthName = selectedMonth.toLocaleString('default', { month: 'long' });
+const yearVal = selectedMonth.getFullYear();
+document.getElementById('nightMonth').value = `${monthName} ${yearVal}`;
+
+// Set from and to dates based on the selected month
+const firstDay = new Date(state.year, state.month - 1, 1);
+const lastDay = new Date(state.year, state.month, 0);
+document.getElementById('nightFromDate').value = firstDay.toLocaleDateString('en-GB');
+document.getElementById('nightToDate').value = lastDay.toLocaleDateString('en-GB');
+
+// Load classification data
+const nightFormData = JSON.parse(localStorage.getItem('night_form_data')) || {};
+if (nightFormData.header && nightFormData.header.classification) {
+document.getElementById('nightClassification').value = nightFormData.header.classification;
+}
+}
+
+function updateNightSummary() {
+let totalNights = 0;
+let totalHours = 0;
+let totalWeightedMinutes = 0;
+let totalAmount = 0;
+
+const rows = nightTableBody.querySelectorAll('tr');
+rows.forEach(row => {
+const inputs = row.querySelectorAll('input');
+const hours = inputs[5].value;
+const weightedMinutes = inputs[6].value;
+const amount = parseFloat(inputs[8].value) || 0;
+
+if (hours && hours !== '0h 0m') {
+totalNights++;
+}
+
+if (hours) {
+const match = hours.match(/(\d+)h\s*(\d*)m/);
+if (match) {
+const h = parseInt(match[1]);
+const m = match[2] ? parseInt(match[2]) : 0;
+totalHours += h + (m / 60);
+}
+}
+
+if (weightedMinutes) {
+const match = weightedMinutes.match(/(\d+)h\s*(\d*)m/);
+if (match) {
+const h = parseInt(match[1]);
+const m = match[2] ? parseInt(match[2]) : 0;
+totalWeightedMinutes += h * 60 + m;
+}
+}
+
+totalAmount += amount;
+});
+
+document.getElementById('totalNights').textContent = totalNights;
+document.getElementById('totalNightHours').textContent = totalHours.toFixed(2) + 'h';
+document.getElementById('totalWeightedMinutes').textContent = Math.floor(totalWeightedMinutes / 60) + 'h ' + (totalWeightedMinutes % 60) + 'm';
+
+// Check if profile has DA set, otherwise show dots
+const profile = JSON.parse(localStorage.getItem('ta_profile')) || {};
+const daAmount = parseFloat(profile.daAmount) || 0;
+const basicPay = parseFloat(profile.basicPay) || 0;
+
+if (daAmount > 0 && basicPay > 0) {
+document.getElementById('totalNightAmount').textContent = `₹${Math.round(totalAmount).toLocaleString()}`;
+} else {
+document.getElementById('totalNightAmount').textContent = '.......…..';
+}
+}
+
+function setupNightTableListeners() {
+nightTableBody.addEventListener('input', function(e) {
+const target = e.target;
+if (target.classList.contains('night-hours') || target.classList.contains('night-weighted-minutes') || target.classList.contains('night-amount')) {
+updateNightSummary();
+}
+if (target.classList.contains('night-duty-from') || target.classList.contains('night-duty-to')) {
+const row = target.closest('tr');
+const inputs = row.querySelectorAll('input');
+const from = inputs[3].value;
+const to = inputs[4].value;
+
+if (from && to) {
+const hours = calculateNightHours(from, to);
+inputs[5].value = hours;
+
+const weighted = calculateWeightedMinutes(from, to);
+inputs[6].value = weighted;
+
+const profile = JSON.parse(localStorage.getItem('ta_profile')) || {};
+const basicPay = parseFloat(profile.basicPay) || 0;
+const daAmount = parseFloat(profile.daAmount) || 0;
+if (basicPay > 0 && daAmount > 0) {
+const amount = calculateNightAmount(weighted, basicPay, daAmount);
+inputs[8].value = amount;
+}
+}
+}
+});
+}
+
+function openNightModal() {
+nightModal.style.display = 'flex';
+setupNightTableListeners();
+updateNightSummary();
+}
+
+function closeNightModal() {
+nightModal.style.display = 'none';
+}
+
+function addNightRow() {
+const rowCount = nightTableBody.children.length;
+const row = document.createElement('tr');
+row.innerHTML = `
+<td style="border: 1px solid #000; padding: 1.5px;" class="date-column">
+<input type="text" class="night-date" placeholder="DD/MM/YY" style="width: 100%; border: none; padding: 0.75px; font-size: 6px; font-weight: 600; color: #1e40af;">
+</td>
+<td style="border: 1px solid #000; padding: 1.5px;">
+<input type="text" class="night-shift-from" placeholder="22:00" value="22:00" style="width: 100%; border: none; padding: 0.75px; font-size: 6px; text-align: center;">
+</td>
+<td style="border: 1px solid #000; padding: 1.5px;">
+<input type="text" class="night-shift-to" placeholder="06:00" value="06:00" style="width: 100%; border: none; padding: 0.75px; font-size: 6px; text-align: center;">
+</td>
+<td style="border: 1px solid #000; padding: 1.5px;">
+<input type="text" class="night-duty-from" placeholder="22:00" value="22:00" style="width: 100%; border: none; padding: 0.75px; font-size: 6px; text-align: center;">
+</td>
+<td style="border: 1px solid #000; padding: 1.5px;">
+<input type="text" class="night-duty-to" placeholder="06:00" value="06:00" style="width: 100%; border: none; padding: 0.75px; font-size: 6px; text-align: center;">
+</td>
+<td style="border: 1px solid #000; padding: 1.5px;">
+<input type="text" class="night-hours" placeholder="8h 0m" style="width: 100%; border: none; padding: 0.75px; font-size: 6px; text-align: center;">
+</td>
+<td style="border: 1px solid #000; padding: 1.5px;">
+<input type="text" class="night-weighted-minutes" placeholder="1h 20m" style="width: 100%; border: none; padding: 0.75px; font-size: 6px; text-align: center;">
+</td>
+<td style="border: 1px solid #000; padding: 1.5px;">
+<input type="text" class="night-duty-object" placeholder="Object of night duty" style="width: 100%; border: none; padding: 0.75px; font-size: 6px;">
+</td>
+<td style="border: 1px solid #000; padding: 1.5px;">
+<input type="text" class="night-amount" placeholder="0" style="width: 100%; border: none; padding: 0.75px; font-size: 6px; text-align: center;">
+</td>
+<td style="border: 1px solid #000; padding: 1.5px;">
+<input type="text" class="night-authority" placeholder="" style="width: 100%; border: none; padding: 0.75px; font-size: 6px; text-align: center;">
+</td>
+`;
+nightTableBody.appendChild(row);
+}
+
+function loadNightFormData() {
+const saved = localStorage.getItem('night_form_data');
+if (saved) {
+nightFormData = JSON.parse(saved);
+if (nightFormData.header) {
+document.getElementById('nightEmployeeName').value = nightFormData.header.employeeName || '';
+document.getElementById('nightSono').value = nightFormData.header.sono || '';
+document.getElementById('nightDesignation').value = nightFormData.header.designation || '';
+document.getElementById('nightEmpNo').value = nightFormData.header.empNo || '';
+document.getElementById('nightStation').value = nightFormData.header.station || '';
+document.getElementById('nightBasicPay').value = nightFormData.header.basicPay || '';
+document.getElementById('nightDA').value = nightFormData.header.da || '';
+document.getElementById('nightMonth').value = nightFormData.header.month || '';
+document.getElementById('nightFromDate').value = nightFormData.header.fromDate || '';
+document.getElementById('nightToDate').value = nightFormData.header.toDate || '';
+document.getElementById('nightClassification').value = nightFormData.header.classification || '';
+}
+nightTableBody.innerHTML = '';
+if (nightFormData.rows && nightFormData.rows.length > 0) {
+nightFormData.rows.forEach(rowData => {
+addNightRow();
+const lastRow = nightTableBody.lastElementChild;
+const inputs = lastRow.querySelectorAll('input');
+inputs[0].value = rowData.date || '';
+inputs[1].value = rowData.shiftFrom || '';
+inputs[2].value = rowData.shiftTo || '';
+inputs[3].value = rowData.dutyFrom || '';
+inputs[4].value = rowData.dutyTo || '';
+inputs[5].value = rowData.hours || '';
+inputs[6].value = rowData.weightedMinutes || '';
+inputs[7].value = rowData.object || '';
+inputs[8].value = rowData.amount || '';
+inputs[9].value = rowData.authority || '';
+});
+}
+} else {
+addNightRow();
+}
+}
+
+function saveNightFormData() {
+const profile = JSON.parse(localStorage.getItem('ta_profile')) || {};
+nightFormData.header = {
+employeeName: document.getElementById('nightEmployeeName').value,
+sono: document.getElementById('nightSono').value,
+designation: document.getElementById('nightDesignation').value,
+empNo: document.getElementById('nightEmpNo').value,
+station: document.getElementById('nightStation').value,
+basicPay: document.getElementById('nightBasicPay').value,
+da: document.getElementById('nightDA').value,
+month: document.getElementById('nightMonth').value,
+fromDate: document.getElementById('nightFromDate').value,
+toDate: document.getElementById('nightToDate').value,
+classification: document.getElementById('nightClassification').value,
+railwayZone: profile.railwayZone || 'RAILWAY ZONE'
+};
+
+nightFormData.rows = [];
+const rows = nightTableBody.querySelectorAll('tr');
+rows.forEach(row => {
+const inputs = row.querySelectorAll('input');
+nightFormData.rows.push({
+date: inputs[0].value,
+shiftFrom: inputs[1].value,
+shiftTo: inputs[2].value,
+dutyFrom: inputs[3].value,
+dutyTo: inputs[4].value,
+hours: inputs[5].value,
+weightedMinutes: inputs[6].value,
+object: inputs[7].value,
+amount: inputs[8].value,
+authority: inputs[9].value
+});
+});
+
+localStorage.setItem('night_form_data', JSON.stringify(nightFormData));
+}
+
+function printNightForm() {
+saveNightFormData();
+
+const printWindow = window.open('', '_blank');
+printWindow.document.write(`
+<!DOCTYPE html>
+<html>
+<head>
+<title>Night Form Print</title>
+<style>
+body { font-family: Arial, sans-serif; margin: 10px; }
+.night-form-header { border: 1px solid #000; padding: 7.5px; margin-bottom: 11.25px; }
+.night-header-title { text-align: center; margin-bottom: 7.5px; }
+.night-header-title div:first-child { font-size: 12px; font-weight: bold; }
+.night-header-title div:last-child { font-size: 10.5px; }
+.night-header-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 3.75px; margin-top: 3.75px; }
+.night-header-item { display: flex; align-items: center; gap: 3.75px; }
+.night-header-item label { font-weight: bold; min-width: 75px; font-size: 9px; margin: 0; }
+.night-header-item input { flex: 1; border: none; border-bottom: 1px solid #ccc; padding: 1.5px; background: transparent; font-size: 9px; }
+.night-table-container { margin-bottom: 11.25px; }
+.night-table-container table { width: 100%; border-collapse: collapse; font-size: 7.5px; }
+.night-table-container th, .night-table-container td { border: 1px solid #000; padding: 2.25px; text-align: center; }
+.night-table-container th { background: #f0f0f0; font-weight: bold; }
+.night-table-container input { width: 100%; border: none; padding: 1.5px; background: transparent; }
+.night-summary { border: 1px solid #ccc; padding: 7.5px; background: #f9f9f9; margin-top: 7.5px; }
+.night-summary-title { font-weight: bold; margin-bottom: 3.75px; font-size: 9px; }
+.night-summary-grid { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 7.5px; text-align: center; }
+.night-summary-item { font-size: 8.25px; }
+.night-summary-value { font-weight: bold; font-size: 10.5px; }
+.night-footer { border: 1px solid #ccc; padding: 11.25px; background: #f9f9f9; margin-top: 7.5px; }
+.night-footer-title { font-weight: bold; margin-bottom: 3.75px; font-size: 9px; }
+.night-signature-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 7.5px; }
+.night-signature-item { display: flex; flex-direction: column; }
+.night-signature-label { font-size: 8.25px; color: #666; margin-bottom: 3.75px; }
+.night-signature-line { border-bottom: 1px solid #000; padding-bottom: 7.5px; min-height: 15px; }
+.night-footer-note { margin-top: 7.5px; font-size: 8.25px; text-align: center; }
+@media print { body { margin: 0; } .night-form-header, .night-table-container, .night-summary, .night-footer { break-inside: avoid; } }
+</style>
+</head>
+<body>
+<div class="night-form-header">
+<div class="night-header-title">
+<div id="nightRailwayZonePrint">${nightFormData.header.railwayZone || 'RAILWAY ZONE'}</div>
+<div>Night Duty Allowance</div>
+</div>
+<div class="night-header-grid">
+<div class="night-header-item">
+<label>Name:</label>
+<input value="${nightFormData.header.employeeName || ''}" readonly>
+</div>
+<div class="night-header-item">
+<label>S/O:</label>
+<input value="${nightFormData.header.sono || ''}" readonly>
+</div>
+<div class="night-header-item">
+<label>Designation:</label>
+<input value="${nightFormData.header.designation || ''}" readonly>
+</div>
+<div class="night-header-item">
+<label>Employment No.:</label>
+<input value="${nightFormData.header.empNo || ''}" readonly>
+</div>
+<div class="night-header-item">
+<label>Station:</label>
+<input value="${nightFormData.header.station || ''}" readonly>
+</div>
+<div class="night-header-item">
+<label>Basic Pay (Rs.):</label>
+<input value="${nightFormData.header.basicPay || ''}" readonly>
+</div>
+<div class="night-header-item">
+<label>DA (Rs.):</label>
+<input value="${nightFormData.header.da || ''}" readonly>
+</div>
+<div class="night-header-item">
+<label>Month:</label>
+<input value="${nightFormData.header.month || ''}" readonly>
+</div>
+<div class="night-header-item">
+<label>From:</label>
+<input value="${nightFormData.header.fromDate || ''}" readonly>
+</div>
+<div class="night-header-item">
+<label>To:</label>
+<input value="${nightFormData.header.toDate || ''}" readonly>
+</div>
+<!-- New line added for classification -->
+<div class="night-header-item" style="grid-column: 1 / span 2;">
+<label>Classification C. or intensive Reference to pay bill in which charged:</label>
+<input value="${nightFormData.header.classification || ''}" readonly>
+</div>
+</div>
+</div>
+<div class="night-table-container">
+<table>
+<thead>
+<tr>
+<th style="width: 7%;">Date</th>
+<th style="width: 6%;">Night Shift<br/>From</th>
+<th style="width: 6%;">Night Shift<br/>To</th>
+<th style="width: 6%;">Night Duty<br/>From (22-06)</th>
+<th style="width: 6%;">Night Duty<br/>To (22-06)</th>
+<th style="width: 6%;">Total<br/>Hours</th>
+<th style="width: 8%;">Weighted Minutes<br/>(1 hour = 10 mins)</th>
+<th style="width: 25%;">Object of Night Duty</th>
+<th style="width: 6%;">Amount<br/>Payable</th>
+<th style="width: 5%;">Authority Rly. Board<br/>Letter No. pc60/Hw/of 7-7-62</th>
+</tr>
+</thead>
+<tbody>
+${nightFormData.rows.map(row => `
+<tr>
+<td style="border: 1px solid #000; padding: 2.25px;">${row.date || ''}</td>
+<td style="border: 1px solid #000; padding: 2.25px;">${row.shiftFrom || ''}</td>
+<td style="border: 1px solid #000; padding: 2.25px;">${row.shiftTo || ''}</td>
+<td style="border: 1px solid #000; padding: 2.25px;">${row.dutyFrom || ''}</td>
+<td style="border: 1px solid #000; padding: 2.25px;">${row.dutyTo || ''}</td>
+<td style="border: 1px solid #000; padding: 2.25px;">${row.hours || ''}</td>
+<td style="border: 1px solid #000; padding: 2.25px;">${row.weightedMinutes || ''}</td>
+<td style="border: 1px solid #000; padding: 2.25px;">${row.object || ''}</td>
+<td style="border: 1px solid #000; padding: 2.25px;">${row.amount || ''}</td>
+<td style="border: 1px solid #000; padding: 2.25px;">${row.authority || ''}</td>
+</tr>
+`).join('')}
+</tbody>
+</table>
+</div>
+<div class="night-summary">
+<div class="night-summary-title">Summary</div>
+<div class="night-summary-grid">
+<div class="night-summary-item">
+<div style="font-size: 7.5px; color: #666;">Total Nights</div>
+<div class="night-summary-value" id="totalNightsPrint">${document.getElementById('totalNights').textContent}</div>
+</div>
+<div class="night-summary-item">
+<div style="font-size: 7.5px; color: #666;">Total Hours</div>
+<div class="night-summary-value" id="totalNightHoursPrint">${document.getElementById('totalNightHours').textContent}</div>
+</div>
+<div class="night-summary-item">
+<div style="font-size: 7.5px; color: #666;">Total (1h=10m)</div>
+<div class="night-summary-value" id="totalWeightedMinutesPrint">${document.getElementById('totalWeightedMinutes').textContent}</div>
+</div>
+<div class="night-summary-item">
+<div style="font-size: 7.5px; color: #666;">Total Amount</div>
+<div class="night-summary-value" id="totalNightAmountPrint">${document.getElementById('totalNightAmount').textContent}</div>
+</div>
+</div>
+</div>
+<div class="night-footer">
+<div class="night-footer-title">Verification & Signature</div>
+<div class="night-signature-grid">
+<div class="night-signature-item">
+<div class="night-signature-label">Signature of Subordinate incharge</div>
+<div class="night-signature-line"></div>
+</div>
+<div class="night-signature-item">
+<div class="night-signature-label">Signature of Claimant</div>
+<div class="night-signature-line"></div>
+</div>
+</div>
+<div class="night-footer-note">
+Verified & Certified that the entries have been made the No, D.A. Register the year Claimant has actually performed Night duty
+</div>
+</div>
+<script>
+window.onload = function() { window.print(); }
+<\/script>
+</body>
+</html>
+`);
+printWindow.document.close();
+}
+
+function saveNightForm() {
+saveNightFormData();
+
+const profile = JSON.parse(localStorage.getItem('ta_profile')) || {};
+const data = {
+header: nightFormData.header,
+rows: nightFormData.rows
+};
+
+const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+const url = URL.createObjectURL(blob);
+const a = document.createElement('a');
+a.href = url;
+a.download = `night_form_${state.year}_${state.month}.json`;
+document.body.appendChild(a);
+a.click();
+a.remove();
+URL.revokeObjectURL(url);
+
+alert('Night Form saved and downloaded successfully!');
+}
+
+// Report Generation
+generateReportBtn.addEventListener('click', openReportModal);
+closeReportModalBtn.addEventListener('click', closeReportModal);
+generateReportBtnMain.addEventListener('click', generateReport);
+printReportBtn.addEventListener('click', printReport);
+exportReportCsvBtn.addEventListener('click', exportReportCsv);
+
+function openReportModal() {
+reportModal.style.display = 'flex';
+reportResults.style.display = 'none';
+}
+
+function closeReportModal() {
+reportModal.style.display = 'none';
+}
+
+function generateReport() {
+const reportType = document.querySelector('.report-type.active').dataset.type;
+let startDate, endDate;
+
+if (reportType === 'monthly') {
+const monthInput = document.getElementById('reportMonth').value;
+if (!monthInput) {
+alert('Please select a month.');
+return;
+}
+const [year, month] = monthInput.split('-').map(Number);
+startDate = new Date(year, month - 1, 1);
+endDate = new Date(year, month, 0);
+} else if (reportType === 'yearly') {
+const year = parseInt(document.getElementById('reportYear').value);
+startDate = new Date(year, 0, 1);
+endDate = new Date(year, 11, 31);
+} else if (reportType === 'custom') {
+const fromDate = document.getElementById('reportFromDate').value;
+const toDate = document.getElementById('reportToDate').value;
+if (!fromDate || !toDate) {
+alert('Please select both from and to dates.');
+return;
+}
+startDate = new Date(fromDate);
+endDate = new Date(toDate);
+}
+
+const reportData = [];
+let totalPresent = 0, totalAbsent = 0, totalLeave = 0, totalRest = 0, totalHoliday = 0, totalHalfDay = 0, totalOvertime = 0;
+
+for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
+const ymd = formatYMD(d.getFullYear(), d.getMonth() + 1, d.getDate());
+const key = `att_${ymd.substring(0, 7)}`;
+const monthData = JSON.parse(localStorage.getItem(key)) || {};
+const entry = monthData[ymd];
+
+if (entry) {
+if (entry.status === 'present') totalPresent++;
+if (entry.status === 'absent') totalAbsent++;
+if (entry.status === 'leave') totalLeave++;
+if (entry.status === 'rest') totalRest++;
+if (entry.status === 'holiday') totalHoliday++;
+if (entry.status === 'halfday') totalHalfDay++;
+if (entry.status === 'overtime') totalOvertime++;
+}
+
+reportData.push({
+date: ymd,
+day: d.toLocaleDateString('en-US', { weekday: 'short' }),
+entry: entry || {}
+});
+}
+
+reportSummary.innerHTML = `
+<div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; text-align: center;">
+<div style="background: var(--success-gradient); color: white; padding: 10px; border-radius: 8px;">
+<div>Present</div>
+<div style="font-size: 18px; font-weight: bold;">${totalPresent}</div>
+</div>
+<div style="background: var(--danger-gradient); color: white; padding: 10px; border-radius: 8px;">
+<div>Absent</div>
+<div style="font-size: 18px; font-weight: bold;">${totalAbsent}</div>
+</div>
+<div style="background: var(--yellow-gradient); color: white; padding: 10px; border-radius: 8px;">
+<div>Leave</div>
+<div style="font-size: 18px; font-weight: bold;">${totalLeave}</div>
+</div>
+<div style="background: var(--rest-gradient); color: white; padding: 10px; border-radius: 8px;">
+<div>Rest</div>
+<div style="font-size: 18px; font-weight: bold;">${totalRest}</div>
+</div>
+<div style="background: var(--holiday-gradient); color: white; padding: 10px; border-radius: 8px;">
+<div>Holiday</div>
+<div style="font-size: 18px; font-weight: bold;">${totalHoliday}</div>
+</div>
+<div style="background: #f59e0b; color: white; padding: 10px; border-radius: 8px;">
+<div>Half Day</div>
+<div style="font-size: 18px; font-weight: bold;">${totalHalfDay}</div>
+</div>
+<div style="background: #8b5cf6; color: white; padding: 10px; border-radius: 8px;">
+<div>Overtime</div>
+<div style="font-size: 18px; font-weight: bold;">${totalOvertime}</div>
+</div>
+<div style="background: var(--accent-gradient); color: white; padding: 10px; border-radius: 8px;">
+<div>Total Days</div>
+<div style="font-size: 18px; font-weight: bold;">${reportData.length}</div>
+</div>
+</div>
+`;
+
+reportTableBody.innerHTML = '';
+reportData.forEach(item => {
+const row = document.createElement('tr');
+const entry = item.entry;
+row.innerHTML = `
+<td>${item.date}</td>
+<td>${entry.status || '-'}</td>
+<td>${entry.timeOn || '-'}</td>
+<td>${entry.timeOff || '-'}</td>
+<td>${entry.duration || '-'}</td>
+<td>${entry.shift || '-'}</td>
+<td>${(entry.taFrom || entry.taTo) ? '' : 'No'}</td>
+<td>${entry.nightDutyApplicable ? '' : 'No'}</td>
+<td>${entry.notes || '-'}</td>
+`;
+reportTableBody.appendChild(row);
+});
+
+reportResults.style.display = 'block';
+}
+
+function printReport() {
+window.print();
+}
+
+function exportReportCsv() {
+const rows = [['Date', 'Status', 'Time On', 'Time Off', 'Duration', 'Shift', 'TA', 'Night Duty', 'Notes']];
+const tableRows = reportTableBody.querySelectorAll('tr');
+tableRows.forEach(row => {
+const cells = row.querySelectorAll('td');
+const rowData = Array.from(cells).map(cell => cell.textContent);
+rows.push(rowData);
+});
+
+if (rows.length === 1) {
+alert('No data to export.');
+return;
+}
+
+const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n');
+const blob = new Blob([csv], { type: 'text/csv' });
+const url = URL.createObjectURL(blob);
+const a = document.createElement('a');
+a.href = url;
+const reportType = document.querySelector('.report-type.active').dataset.type;
+a.download = `attendance_report_${reportType}.csv`;
+document.body.appendChild(a);
+a.click();
+a.remove();
+URL.revokeObjectURL(url);
+}
+
+// User Guide
+openUserGuideBtn.addEventListener('click', () => {
+userGuideModal.style.display = 'flex';
+});
+
+closeUserGuideModalBtn.addEventListener('click', () => {
+userGuideModal.style.display = 'none';
+});
+
+// Reset Options
+openResetOptionsBtn.addEventListener('click', () => {
+resetModal.style.display = 'flex';
+});
+
+closeResetModalBtn.addEventListener('click', () => {
+resetModal.style.display = 'none';
+});
+
+resetCurrentMonthBtn.addEventListener('click', () => {
+if (confirm('Are you sure you want to reset all data for the current month?')) {
+state.data = {};
+saveMonthData();
+renderCalendar();
+alert('Current month data has been reset.');
+}
+});
+
+resetCurrentYearBtn.addEventListener('click', () => {
+if (confirm('Are you sure you want to reset all data for the current year?')) {
+for (let m = 1; m <= 12; m++) {
+const key = `att_${state.year}-${String(m).padStart(2, '0')}`;
+localStorage.removeItem(key);
+}
+loadMonthData();
+renderCalendar();
+alert('Current year data has been reset.');
+}
+});
+
+resetSettingsBtn.addEventListener('click', () => {
+if (confirm('Are you sure you want to reset all settings to defaults?')) {
+localStorage.removeItem('shift_presets');
+alert('Settings have been reset to defaults.');
+}
+});
+
+resetProfileBtn.addEventListener('click', () => {
+if (confirm('Are you sure you want to reset your profile?')) {
+localStorage.removeItem('ta_profile');
+localStorage.removeItem('profile_photo');
+alert('Profile has been reset.');
+}
+});
+
+factoryResetBtn.addEventListener('click', () => {
+if (confirm('WARNING: This will delete ALL data including attendance records, profile, and settings. This action cannot be undone. Are you sure?')) {
+localStorage.clear();
+state.data = {};
+saveMonthData();
+renderCalendar();
+alert('All data has been reset. The app will now reload.');
+location.reload();
+}
+});
+
+// Report type selector
+document.querySelectorAll('.report-type').forEach(type => {
+type.addEventListener('click', function() {
+document.querySelectorAll('.report-type').forEach(t => t.classList.remove('active'));
+this.classList.add('active');
+
+document.querySelectorAll('.report-dates').forEach(d => d.classList.remove('active'));
+document.getElementById(this.dataset.type + 'ReportDates').classList.add('active');
+});
+});
+
+// Salary Calculator
+openSalaryCalculatorBtn.addEventListener('click', () => {
+const profile = JSON.parse(localStorage.getItem('ta_profile')) || {};
+if (profile.basicPay) {
+document.getElementById('salaryBasicPay').value = profile.basicPay;
+}
+if (profile.daPercentage) {
+document.getElementById('salaryDAPercentage').value = profile.daPercentage;
+}
+salaryCalculatorModal.style.display = 'flex';
+});
+
+closeSalaryCalculatorBtn.addEventListener('click', () => {
+salaryCalculatorModal.style.display = 'none';
+salaryResults.style.display = 'none';
+});
+
+calculateSalaryBtn.addEventListener('click', () => {
+const basicPay = parseFloat(document.getElementById('salaryBasicPay').value) || 0;
+const daPercentage = parseFloat(document.getElementById('salaryDAPercentage').value) || 0;
+const hraPercentage = parseFloat(document.getElementById('salaryHRAPercentage').value) || 0;
+const otherAllowances = parseFloat(document.getElementById('salaryOtherAllowances').value) || 0;
+const pfPercentage = parseFloat(document.getElementById('salaryPFPercentage').value) || 0;
+const taxDeduction = parseFloat(document.getElementById('salaryTaxDeduction').value) || 0;
+
+if (basicPay <= 0) {
+alert('Please enter a valid Basic Pay amount.');
+return;
+}
+
+const daAmount = (basicPay * daPercentage) / 100;
+const hraAmount = (basicPay * hraPercentage) / 100;
+const grossSalary = basicPay + daAmount + hraAmount + otherAllowances;
+
+const pfAmount = (basicPay * pfPercentage) / 100;
+const totalDeductions = pfAmount + taxDeduction;
+
+const netSalary = grossSalary - totalDeductions;
+
+document.getElementById('salaryBasicPayResult').textContent = `₹${basicPay.toLocaleString()}`;
+document.getElementById('salaryDAResult').textContent = `₹${daAmount.toLocaleString()}`;
+document.getElementById('salaryHRAResult').textContent = `₹${hraAmount.toLocaleString()}`;
+document.getElementById('salaryOtherAllowancesResult').textContent = `₹${otherAllowances.toLocaleString()}`;
+document.getElementById('salaryGrossResult').textContent = `₹${grossSalary.toLocaleString()}`;
+document.getElementById('salaryPFResult').textContent = `₹${pfAmount.toLocaleString()}`;
+document.getElementById('salaryTaxResult').textContent = `₹${taxDeduction.toLocaleString()}`;
+document.getElementById('salaryTotalDeductions').textContent = `₹${totalDeductions.toLocaleString()}`;
+document.getElementById('salaryNetResult').textContent = `₹${netSalary.toLocaleString()}`;
+
+salaryResults.style.display = 'block';
+});
+
+printSalaryBtn.addEventListener('click', () => {
+window.print();
+});
+
+// Status Tracking System - Last 60 Days
+function getLast60DaysData(status) {
+  const endDate = new Date();
+  const startDate = new Date();
+  startDate.setDate(startDate.getDate() - 60);
+  
+  const dates = [];
+  let totalCount = 0;
+  let thisMonthCount = 0;
+  
+  const currentMonth = state.month;
+  const currentYear = state.year;
+  
+  for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
+    const ymd = formatYMD(d.getFullYear(), d.getMonth() + 1, d.getDate());
+    const key = `att_${ymd.substring(0, 7)}`;
+    const monthData = JSON.parse(localStorage.getItem(key)) || {};
+    const entry = monthData[ymd];
+    
+    if (entry && entry.status === status) {
+      totalCount++;
+      dates.push({
+        date: ymd,
+        displayDate: `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getFullYear()}`,
+        day: d.toLocaleDateString('en-US', { weekday: 'short' })
+      });
+      
+      // Count for current month
+      if (d.getMonth() + 1 === currentMonth && d.getFullYear() === currentYear) {
+        thisMonthCount++;
+      }
+    }
+  }
+  
+  return {
+    totalCount,
+    thisMonthCount,
+    dates: dates.reverse() // Show most recent first
+  };
+}
+
+function showPresentTrackingModal() {
+  const presentData = getLast60DaysData('present');
+  
+  document.getElementById('totalPresentDays').textContent = presentData.totalCount;
+  document.getElementById('presentThisMonth').textContent = presentData.thisMonthCount;
+  
+  const datesList = document.getElementById('presentDatesList');
+  datesList.innerHTML = '';
+  
+  if (presentData.dates.length === 0) {
+    datesList.innerHTML = '<div class="small" style="text-align: center; padding: 10px;">No present days in the last 60 days</div>';
+  } else {
+    presentData.dates.forEach(item => {
+      const dateItem = document.createElement('div');
+      dateItem.className = 'status-date-item';
+      dateItem.innerHTML = `
+        <span>${item.displayDate}</span>
+        <span style="color: var(--muted);">${item.day}</span>
+      `;
+      datesList.appendChild(dateItem);
+    });
+  }
+  
+  presentTrackingModal.style.display = 'flex';
+}
+
+function showAbsentTrackingModal() {
+  const absentData = getLast60DaysData('absent');
+  
+  document.getElementById('totalAbsentDays').textContent = absentData.totalCount;
+  document.getElementById('absentThisMonth').textContent = absentData.thisMonthCount;
+  
+  const datesList = document.getElementById('absentDatesList');
+  datesList.innerHTML = '';
+  
+  if (absentData.dates.length === 0) {
+    datesList.innerHTML = '<div class="small" style="text-align: center; padding: 10px;">No absent days in the last 60 days</div>';
+  } else {
+    absentData.dates.forEach(item => {
+      const dateItem = document.createElement('div');
+      dateItem.className = 'status-date-item';
+      dateItem.innerHTML = `
+        <span>${item.displayDate}</span>
+        <span style="color: var(--muted);">${item.day}</span>
+      `;
+      datesList.appendChild(dateItem);
+    });
+  }
+  
+  absentTrackingModal.style.display = 'flex';
+}
+
+function showLeaveTrackingModal() {
+  const leaveData = getLast60DaysData('leave');
+  
+  document.getElementById('totalLeaveDays').textContent = leaveData.totalCount;
+  document.getElementById('leaveThisMonth').textContent = leaveData.thisMonthCount;
+  
+  const datesList = document.getElementById('leaveDatesList');
+  datesList.innerHTML = '';
+  
+  if (leaveData.dates.length === 0) {
+    datesList.innerHTML = '<div class="small" style="text-align: center; padding: 10px;">No leave days in the last 60 days</div>';
+  } else {
+    leaveData.dates.forEach(item => {
+      const dateItem = document.createElement('div');
+      dateItem.className = 'status-date-item';
+      dateItem.innerHTML = `
+        <span>${item.displayDate}</span>
+        <span style="color: var(--muted);">${item.day}</span>
+      `;
+      datesList.appendChild(dateItem);
+    });
+  }
+  
+  leaveTrackingModal.style.display = 'flex';
+}
+
+function showHolidayTrackingModal() {
+  const holidayData = getLast60DaysData('holiday');
+  
+  document.getElementById('totalHolidayDays').textContent = holidayData.totalCount;
+  document.getElementById('holidayThisMonth').textContent = holidayData.thisMonthCount;
+  
+  const datesList = document.getElementById('holidayDatesList');
+  datesList.innerHTML = '';
+  
+  if (holidayData.dates.length === 0) {
+    datesList.innerHTML = '<div class="small" style="text-align: center; padding: 10px;">No holiday days in the last 60 days</div>';
+  } else {
+    holidayData.dates.forEach(item => {
+      const dateItem = document.createElement('div');
+      dateItem.className = 'status-date-item';
+      dateItem.innerHTML = `
+        <span>${item.displayDate}</span>
+        <span style="color: var(--muted);">${item.day}</span>
+      `;
+      datesList.appendChild(dateItem);
+    });
+  }
+  
+  holidayTrackingModal.style.display = 'flex';
+}
+
+// Rest Tracking System
+function calculateRestDetails() {
+  let totalWorkingDays = 0;
+  let restDaysTaken = 0;
+  let restDaysThisMonth = 0;
+  
+  // Get last 60 days data for rest
+  const restData = getLast60DaysData('rest');
+  restDaysTaken = restData.totalCount;
+  restDaysThisMonth = restData.thisMonthCount;
+  
+  // Calculate working days from last 60 days
+  const presentData = getLast60DaysData('present');
+  const overtimeData = getLast60DaysData('overtime');
+  const halfdayData = getLast60DaysData('halfday');
+  
+  totalWorkingDays = presentData.totalCount + overtimeData.totalCount + halfdayData.totalCount;
+  
+  // Calculate rest days earned (every 6 working days)
+  const restDaysEarned = Math.floor(totalWorkingDays / 6);
+  const restBalance = restDaysEarned - restDaysTaken;
+  
+  // Calculate next rest day
+  const nextRestAfter = 6 - (totalWorkingDays % 6);
+  
+  return {
+    totalWorkingDays,
+    restDaysEarned,
+    restDaysTaken,
+    restDaysThisMonth,
+    restBalance,
+    nextRestAfter,
+    restDates: restData.dates
+  };
+}
+
+function showRestTrackingModal() {
+  const restDetails = calculateRestDetails();
+  
+  // Update modal content
+  document.getElementById('totalWorkingDays').textContent = restDetails.totalWorkingDays;
+  document.getElementById('restDaysEarned').textContent = restDetails.restDaysEarned;
+  document.getElementById('restDaysTaken').textContent = restDetails.restDaysTaken;
+  document.getElementById('restDaysThisMonth').textContent = restDetails.restDaysThisMonth;
+  document.getElementById('restBalance').textContent = restDetails.restBalance;
+  document.getElementById('nextRestAfter').textContent = restDetails.nextRestAfter;
+  
+  // Update progress bar
+  const progressPercent = ((restDetails.totalWorkingDays % 6) / 6) * 100;
+  document.getElementById('restProgressFill').style.width = `${progressPercent}%`;
+  
+  // Update next rest info
+  const nextRestInfo = document.getElementById('nextRestInfo');
+  if (restDetails.nextRestAfter === 0) {
+    nextRestInfo.textContent = 'Rest day due now!';
+    nextRestInfo.style.background = 'var(--success-gradient)';
+  } else {
+    nextRestInfo.textContent = `Next rest in ${restDetails.nextRestAfter} days`;
+    nextRestInfo.style.background = 'var(--rest)';
+  }
+  
+  // Update rest dates list
+  const datesList = document.getElementById('restDatesList');
+  datesList.innerHTML = '';
+  
+  if (restDetails.restDates.length === 0) {
+    datesList.innerHTML = '<div class="small" style="text-align: center; padding: 10px;">No rest days in the last 60 days</div>';
+  } else {
+    restDetails.restDates.forEach(item => {
+      const dateItem = document.createElement('div');
+      dateItem.className = 'status-date-item';
+      dateItem.innerHTML = `
+        <span>${item.displayDate}</span>
+        <span style="color: var(--muted);">${item.day}</span>
+      `;
+      datesList.appendChild(dateItem);
+    });
+  }
+  
+  // Show modal
+  restTrackingModal.style.display = 'flex';
+}
+
+// Add event listeners for status summary elements
+presentSummaryElement.addEventListener('click', showPresentTrackingModal);
+absentSummaryElement.addEventListener('click', showAbsentTrackingModal);
+leaveSummaryElement.addEventListener('click', showLeaveTrackingModal);
+restSummaryElement.addEventListener('click', showRestTrackingModal);
+holidaySummaryElement.addEventListener('click', showHolidayTrackingModal);
+
+// Add event listeners for close buttons
+closePresentTrackingModalBtn.addEventListener('click', () => {
+  presentTrackingModal.style.display = 'none';
+});
+
+closeAbsentTrackingModalBtn.addEventListener('click', () => {
+  absentTrackingModal.style.display = 'none';
+});
+
+closeLeaveTrackingModalBtn.addEventListener('click', () => {
+  leaveTrackingModal.style.display = 'none';
+});
+
+closeHolidayTrackingModalBtn.addEventListener('click', () => {
+  holidayTrackingModal.style.display = 'none';
+});
+
+closeRestTrackingModalBtn.addEventListener('click', () => {
+  restTrackingModal.style.display = 'none';
+});
+
+function proceedWithApp() {
+// All the initialization that should happen after PIN check
+const now = new Date();
+state.year = now.getFullYear();
+state.month = now.getMonth() + 1;
+
+yearSelect.value = state.year;
+monthSelect.value = state.month;
+
+loadMonthData();
+renderCalendar();
+updateHeaderPayRate();
+loadProfilePhoto();
+initSectorSelection();
+
+// Load profile data to sidebar
+const profile = JSON.parse(localStorage.getItem('ta_profile')) || {};
+if (profile.employeeName) {
+document.getElementById('sidebarProfileName').textContent = profile.employeeName;
+document.getElementById('sidebarProfileInfo').textContent = `${profile.designation || ''} • ${profile.department || ''}`;
+}
+
+// Update TA and Night form buttons visibility based on saved profile
+if (profile.sector === 'government' && profile.governmentDepartment === 'railway') {
+document.getElementById('openTaForm').style.display = 'block';
+document.getElementById('openNightForm').style.display = 'block';
+} else {
+document.getElementById('openTaForm').style.display = 'none';
+document.getElementById('openNightForm').style.display = 'none';
+}
+}
+
+// Initialize the app
+function init() {
+checkAuthStatus();
+}
+
+init();
+</script>
+</body>
+</html>
